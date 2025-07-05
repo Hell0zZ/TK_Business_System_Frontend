@@ -14,7 +14,8 @@ import {
   Row,
   Col,
   Statistic,
-  Tooltip
+  Tooltip,
+  Empty
 } from 'antd';
 import {
   PlusOutlined,
@@ -69,10 +70,11 @@ const MemberAccounts: React.FC = () => {
     setLoading(true);
     try {
       const response = await request.get('/tiktok-accounts');
-      setAccounts(response.data.data || []);
+      setAccounts(Array.isArray(response.data.data) ? response.data.data : []);
     } catch (error: any) {
       console.error('获取我的账号失败:', error);
       message.error(`获取我的账号失败: ${error.message || error.toString()}`);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -192,35 +194,40 @@ const MemberAccounts: React.FC = () => {
 
   // 筛选账号
   const getFilteredAccounts = () => {
-    let filteredAccounts = [...accounts];
+    try {
+      let filteredAccounts = Array.isArray(accounts) ? [...accounts] : [];
 
-    // 按创建时间排序，最新的在前面
-    filteredAccounts.sort((a, b) => {
-      const timeA = new Date(a.created_at || '').getTime();
-      const timeB = new Date(b.created_at || '').getTime();
-      return timeB - timeA; // 降序排列
-    });
+      // 按创建时间排序，最新的在前面
+      filteredAccounts.sort((a, b) => {
+        const timeA = new Date(a.created_at || '').getTime();
+        const timeB = new Date(b.created_at || '').getTime();
+        return timeB - timeA; // 降序排列
+      });
 
-    // 搜索筛选
-    if (searchText) {
-      filteredAccounts = filteredAccounts.filter(account =>
-        account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.country?.toLowerCase().includes(searchText.toLowerCase())
-      );
+      // 搜索筛选
+      if (searchText) {
+        filteredAccounts = filteredAccounts.filter(account =>
+          account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.country?.toLowerCase().includes(searchText.toLowerCase())
+        );
+      }
+
+      // 状态筛选
+      if (statusFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => account.account_status === statusFilter);
+      }
+
+      // 审核状态筛选
+      if (auditFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => account.audit_status === auditFilter);
+      }
+
+      return filteredAccounts;
+    } catch (error) {
+      console.error('筛选账号数据时出错:', error);
+      return [];
     }
-
-    // 状态筛选
-    if (statusFilter !== 'all') {
-      filteredAccounts = filteredAccounts.filter(account => account.account_status === statusFilter);
-    }
-
-    // 审核状态筛选
-    if (auditFilter !== 'all') {
-      filteredAccounts = filteredAccounts.filter(account => account.audit_status === auditFilter);
-    }
-
-    return filteredAccounts;
   };
 
   const getStatusTag = (status: AccountStatus) => {
@@ -294,12 +301,23 @@ const MemberAccounts: React.FC = () => {
       title: '银行卡',
       key: 'bank_card',
       width: 140,
-      render: (_, record) => record.bank_card?.card_number ? (
-        <Space>
-          <BankOutlined />
-          <span>{record.bank_card.card_number.substring(0, 4)}***{record.bank_card.card_number.substring(record.bank_card.card_number.length - 4)}</span>
-        </Space>
-      ) : '-',
+      render: (_, record) => {
+        try {
+          const cardNumber = record.bank_card?.card_number;
+          if (cardNumber && typeof cardNumber === 'string' && cardNumber.length >= 8) {
+            return (
+              <Space>
+                <BankOutlined />
+                <span>{cardNumber.substring(0, 4)}***{cardNumber.substring(cardNumber.length - 4)}</span>
+              </Space>
+            );
+          }
+          return '-';
+        } catch (error) {
+          console.error('银行卡号格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '国家',
@@ -351,7 +369,14 @@ const MemberAccounts: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (created_at) => new Date(created_at).toLocaleString(),
+      render: (created_at) => {
+        try {
+          return created_at ? new Date(created_at).toLocaleString() : '-';
+        } catch (error) {
+          console.error('日期格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '操作',
@@ -373,12 +398,18 @@ const MemberAccounts: React.FC = () => {
 
   // 统计数据
   const getStatistics = () => {
-    const total = accounts.length;
-    const pending = accounts.filter(account => account.audit_status === AuditStatus.PENDING).length;
-    const approved = accounts.filter(account => account.audit_status === AuditStatus.APPROVED).length;
-    const rejected = accounts.filter(account => account.audit_status === AuditStatus.REJECTED).length;
-    
-    return { total, pending, approved, rejected };
+    try {
+      const safeAccounts = Array.isArray(accounts) ? accounts : [];
+      const total = safeAccounts.length;
+      const pending = safeAccounts.filter(account => account.audit_status === AuditStatus.PENDING).length;
+      const approved = safeAccounts.filter(account => account.audit_status === AuditStatus.APPROVED).length;
+      const rejected = safeAccounts.filter(account => account.audit_status === AuditStatus.REJECTED).length;
+      
+      return { total, pending, approved, rejected };
+    } catch (error) {
+      console.error('统计数据计算出错:', error);
+      return { total: 0, pending: 0, approved: 0, rejected: 0 };
+    }
   };
 
   const stats = getStatistics();
@@ -499,6 +530,14 @@ const MemberAccounts: React.FC = () => {
             showTotal: (total) => `共 ${total} 条记录`,
             pageSize: 20,
           }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="暂无数据"
+              />
+            ),
+          }}
         />
       </Card>
 
@@ -550,7 +589,7 @@ const MemberAccounts: React.FC = () => {
                 label="手机型号"
               >
                 <Select placeholder="请选择手机型号" allowClear>
-                  {phoneModels.map(model => (
+                  {Array.isArray(phoneModels) && phoneModels.map(model => (
                     <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
                   ))}
                 </Select>
@@ -573,7 +612,7 @@ const MemberAccounts: React.FC = () => {
                 label="品类"
               >
                 <Select placeholder="请选择品类" allowClear>
-                  {categories.map(category => (
+                  {Array.isArray(categories) && categories.map(category => (
                     <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
                   ))}
                 </Select>
@@ -585,7 +624,7 @@ const MemberAccounts: React.FC = () => {
                 label="银行卡"
               >
                 <Select placeholder="请选择银行卡" allowClear>
-                  {bankCards.map(card => (
+                  {Array.isArray(bankCards) && bankCards.map(card => (
                     <SelectOption key={card.id} value={card.id}>
                       {card.name}
                     </SelectOption>
@@ -610,7 +649,7 @@ const MemberAccounts: React.FC = () => {
                 label="代理IP"
               >
                 <Select placeholder="请选择代理IP" allowClear>
-                  {proxyIPs.map(proxy => (
+                  {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
                     <SelectOption key={proxy.id} value={proxy.id}>
                       {proxy.name} ({proxy.host}:{proxy.port})
                     </SelectOption>
@@ -711,7 +750,7 @@ const MemberAccounts: React.FC = () => {
                 label="手机型号"
               >
                 <Select placeholder="请选择手机型号" allowClear>
-                  {phoneModels.map(model => (
+                  {Array.isArray(phoneModels) && phoneModels.map(model => (
                     <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
                   ))}
                 </Select>
@@ -734,7 +773,7 @@ const MemberAccounts: React.FC = () => {
                 label="品类"
               >
                 <Select placeholder="请选择品类" allowClear>
-                  {categories.map(category => (
+                  {Array.isArray(categories) && categories.map(category => (
                     <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
                   ))}
                 </Select>
@@ -746,7 +785,7 @@ const MemberAccounts: React.FC = () => {
                 label="银行卡"
               >
                 <Select placeholder="请选择银行卡" allowClear>
-                  {bankCards.map(card => (
+                  {Array.isArray(bankCards) && bankCards.map(card => (
                     <SelectOption key={card.id} value={card.id}>
                       {card.name}
                     </SelectOption>
@@ -771,7 +810,7 @@ const MemberAccounts: React.FC = () => {
                 label="代理IP"
               >
                 <Select placeholder="请选择代理IP" allowClear>
-                  {proxyIPs.map(proxy => (
+                  {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
                     <SelectOption key={proxy.id} value={proxy.id}>
                       {proxy.name} ({proxy.host}:{proxy.port})
                     </SelectOption>

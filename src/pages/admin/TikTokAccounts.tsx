@@ -15,7 +15,8 @@ import {
   Col,
   Statistic,
   Tooltip,
-  Divider
+  Divider,
+  Empty
 } from 'antd';
 import {
   EditOutlined,
@@ -76,10 +77,11 @@ const TikTokAccounts: React.FC = () => {
     setLoading(true);
     try {
       const response = await request.get('/tiktok-accounts');
-      setAccounts(response.data.data || []);
+      setAccounts(Array.isArray(response.data.data) ? response.data.data : []);
     } catch (error: any) {
       console.error('获取账号数据失败:', error);
       message.error(`获取账号数据失败: ${error.message || error.toString()}`);
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -171,36 +173,41 @@ const TikTokAccounts: React.FC = () => {
 
   // 筛选账号
   const getFilteredAccounts = () => {
-    let filteredAccounts = [...accounts];
+    try {
+      let filteredAccounts = Array.isArray(accounts) ? [...accounts] : [];
 
-    // 按创建时间排序，最新的在前面
-    filteredAccounts.sort((a, b) => {
-      const timeA = new Date(a.created_at || '').getTime();
-      const timeB = new Date(b.created_at || '').getTime();
-      return timeB - timeA; // 降序排列
-    });
+      // 按创建时间排序，最新的在前面
+      filteredAccounts.sort((a, b) => {
+        const timeA = new Date(a.created_at || '').getTime();
+        const timeB = new Date(b.created_at || '').getTime();
+        return timeB - timeA; // 降序排列
+      });
 
-    // 搜索筛选
-    if (searchText) {
-      filteredAccounts = filteredAccounts.filter(account =>
-        account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.country?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.user?.username?.toLowerCase().includes(searchText.toLowerCase())
-      );
+      // 搜索筛选
+      if (searchText) {
+        filteredAccounts = filteredAccounts.filter(account =>
+          account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.country?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.user?.username?.toLowerCase().includes(searchText.toLowerCase())
+        );
+      }
+
+      // 审核状态筛选
+      if (auditFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => account.audit_status === auditFilter);
+      }
+
+      // 创建者筛选
+      if (creatorFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => account.user?.username === creatorFilter);
+      }
+
+      return filteredAccounts;
+    } catch (error) {
+      console.error('筛选账号数据时出错:', error);
+      return [];
     }
-
-    // 审核状态筛选
-    if (auditFilter !== 'all') {
-      filteredAccounts = filteredAccounts.filter(account => account.audit_status === auditFilter);
-    }
-
-    // 创建者筛选
-    if (creatorFilter !== 'all') {
-      filteredAccounts = filteredAccounts.filter(account => account.user?.username === creatorFilter);
-    }
-
-    return filteredAccounts;
   };
 
   const getAuditTag = (status: AuditStatus) => {
@@ -273,12 +280,23 @@ const TikTokAccounts: React.FC = () => {
       title: '银行卡',
       key: 'bank_card',
       width: 140,
-      render: (_, record) => record.bank_card?.card_number ? (
-        <Space>
-          <BankOutlined />
-          <span>{record.bank_card.card_number.substring(0, 4)}***{record.bank_card.card_number.substring(record.bank_card.card_number.length - 4)}</span>
-        </Space>
-      ) : '-',
+      render: (_, record) => {
+        try {
+          const cardNumber = record.bank_card?.card_number;
+          if (cardNumber && typeof cardNumber === 'string' && cardNumber.length >= 8) {
+            return (
+              <Space>
+                <BankOutlined />
+                <span>{cardNumber.substring(0, 4)}***{cardNumber.substring(cardNumber.length - 4)}</span>
+              </Space>
+            );
+          }
+          return '-';
+        } catch (error) {
+          console.error('银行卡号格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '国家',
@@ -330,7 +348,14 @@ const TikTokAccounts: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString(),
+      render: (time) => {
+        try {
+          return time ? new Date(time).toLocaleString() : '-';
+        } catch (error) {
+          console.error('日期格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '操作',
@@ -354,17 +379,29 @@ const TikTokAccounts: React.FC = () => {
 
   // 统计数据
   const getStatistics = () => {
-    const totalAccounts = accounts.length;
-    const pendingAccounts = accounts.filter(acc => acc.audit_status === AuditStatus.PENDING).length;
-    const approvedAccounts = accounts.filter(acc => acc.audit_status === AuditStatus.APPROVED).length;
+    try {
+      const safeAccounts = Array.isArray(accounts) ? accounts : [];
+      const totalAccounts = safeAccounts.length;
+      const pendingAccounts = safeAccounts.filter(acc => acc.audit_status === AuditStatus.PENDING).length;
+      const approvedAccounts = safeAccounts.filter(acc => acc.audit_status === AuditStatus.APPROVED).length;
 
-    return { totalAccounts, pendingAccounts, approvedAccounts };
+      return { totalAccounts, pendingAccounts, approvedAccounts };
+    } catch (error) {
+      console.error('统计数据计算出错:', error);
+      return { totalAccounts: 0, pendingAccounts: 0, approvedAccounts: 0 };
+    }
   };
 
   // 获取所有创建者列表
   const getCreators = () => {
-    const creators = Array.from(new Set(accounts.map(acc => acc.user?.username).filter(Boolean)));
-    return creators;
+    try {
+      const safeAccounts = Array.isArray(accounts) ? accounts : [];
+      const creators = Array.from(new Set(safeAccounts.map(acc => acc.user?.username).filter(Boolean)));
+      return creators;
+    } catch (error) {
+      console.error('获取创建者列表时出错:', error);
+      return [];
+    }
   };
 
   const statistics = getStatistics();
@@ -456,7 +493,7 @@ const TikTokAccounts: React.FC = () => {
                 }
               >
                 <SelectOption value="all">全部创建者</SelectOption>
-                {creators.map(creator => (
+                {Array.isArray(creators) && creators.map(creator => (
                   <SelectOption key={creator} value={creator}>{creator}</SelectOption>
                 ))}
               </Select>
@@ -503,6 +540,14 @@ const TikTokAccounts: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条记录`,
             pageSize: 20,
+          }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="暂无数据"
+              />
+            ),
           }}
         />
       </Card>
@@ -627,7 +672,7 @@ const TikTokAccounts: React.FC = () => {
                   label="手机型号"
                 >
                   <Select placeholder="请选择手机型号" allowClear>
-                    {phoneModels.map(model => (
+                    {Array.isArray(phoneModels) && phoneModels.map(model => (
                       <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
                     ))}
                   </Select>
@@ -639,7 +684,7 @@ const TikTokAccounts: React.FC = () => {
                   label="品类"
                 >
                   <Select placeholder="请选择品类" allowClear>
-                    {categories.map(category => (
+                    {Array.isArray(categories) && categories.map(category => (
                       <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
                     ))}
                   </Select>
@@ -653,7 +698,7 @@ const TikTokAccounts: React.FC = () => {
                   label="银行卡"
                 >
                   <Select placeholder="请选择银行卡" allowClear>
-                    {bankCards.map(card => (
+                    {Array.isArray(bankCards) && bankCards.map(card => (
                       <SelectOption key={card.id} value={card.id}>
                         {card.name}
                       </SelectOption>
@@ -667,7 +712,7 @@ const TikTokAccounts: React.FC = () => {
                   label="代理IP"
                 >
                   <Select placeholder="请选择代理IP" allowClear>
-                    {proxyIPs.map(proxy => (
+                    {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
                       <SelectOption key={proxy.id} value={proxy.id}>
                         {proxy.name} ({proxy.host}:{proxy.port})
                       </SelectOption>

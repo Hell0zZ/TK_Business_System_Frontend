@@ -17,6 +17,7 @@ import LeaderOperationStats from '../pages/leader/OperationStats';
 import MemberAccounts from '../pages/member/Accounts';
 import MemberBusinessData from '../pages/member/BusinessData';
 import MemberOperationStats from '../pages/member/OperationStats';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // 权限检查组件
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,7 +41,11 @@ const Router: React.FC = () => (
         <Route path="categories" element={<AdminCategories />} />
         <Route path="phone-models" element={<AdminPhoneModels />} />
         <Route path="bank-cards" element={<AdminBankCards />} />
-        <Route path="tiktok-accounts" element={<AdminTikTokAccounts />} />
+        <Route path="tiktok-accounts" element={
+          <ErrorBoundary>
+            <AdminTikTokAccounts />
+          </ErrorBoundary>
+        } />
         <Route path="business-data" element={<AdminBusinessData />} />
         <Route path="operation-stats" element={<AdminOperationStats />} />
       </Route>
@@ -52,7 +57,11 @@ const Router: React.FC = () => (
         </PrivateRoute>
       }>
         <Route path="members" element={<LeaderMembers />} />
-        <Route path="accounts" element={<LeaderAccounts />} />
+        <Route path="accounts" element={
+          <ErrorBoundary>
+            <LeaderAccounts />
+          </ErrorBoundary>
+        } />
         <Route path="proxy-ips" element={<AdminProxyIPs />} />
         <Route path="categories" element={<AdminCategories />} />
         <Route path="phone-models" element={<AdminPhoneModels />} />
@@ -67,7 +76,11 @@ const Router: React.FC = () => (
           <Layout />
         </PrivateRoute>
       }>
-        <Route path="accounts" element={<MemberAccounts />} />
+        <Route path="accounts" element={
+          <ErrorBoundary>
+            <MemberAccounts />
+          </ErrorBoundary>
+        } />
         <Route path="business-data" element={<MemberBusinessData />} />
         <Route path="operation-stats" element={<MemberOperationStats />} />
       </Route>

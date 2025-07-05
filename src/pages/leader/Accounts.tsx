@@ -91,11 +91,12 @@ const Accounts: React.FC = () => {
     setLoading(true);
     try {
       const data = await getGroupAccounts();
-      setGroupData(data);
+      setGroupData(Array.isArray(data) ? data : []);
       setSelectedMember(null);
     } catch (error: any) {
       console.error('获取组内账号数据失败:', error);
       message.error(`获取组内账号数据失败: ${error.message || error.toString()}`);
+      setGroupData([]);
     } finally {
       setLoading(false);
     }
@@ -127,10 +128,11 @@ const Accounts: React.FC = () => {
     setSelectedAccounts([]);
     try {
       const accounts = await getMemberAccounts(member.id);
-      const updatedMember = { ...member, accounts };
+      const updatedMember = { ...member, accounts: Array.isArray(accounts) ? accounts : [] };
       setSelectedMember(updatedMember);
     } catch (error) {
       message.error('获取成员账号失败');
+      setSelectedMember({ ...member, accounts: [] });
     }
   };
 
@@ -203,43 +205,48 @@ const Accounts: React.FC = () => {
     // 获取所有账号数据
     let accounts: TikTokAccount[] = [];
     
-    if (selectedMember) {
-      // 如果选择了特定组员，只显示该组员的账号
-      accounts = selectedMember.accounts || [];
-    } else {
-      // 如果没有选择组员，显示所有组员的账号
-      accounts = groupData.reduce((acc, member) => {
-        return acc.concat(member.accounts || []);
-      }, [] as TikTokAccount[]);
+    try {
+      if (selectedMember) {
+        // 如果选择了特定组员，只显示该组员的账号
+        accounts = Array.isArray(selectedMember.accounts) ? selectedMember.accounts : [];
+      } else {
+        // 如果没有选择组员，显示所有组员的账号
+        accounts = Array.isArray(groupData) ? groupData.reduce((acc, member) => {
+          return acc.concat(Array.isArray(member.accounts) ? member.accounts : []);
+        }, [] as TikTokAccount[]) : [];
+      }
+      
+      // 按创建时间排序，最新的在前面
+      accounts.sort((a, b) => {
+        const timeA = new Date(a.created_at || '').getTime();
+        const timeB = new Date(b.created_at || '').getTime();
+        return timeB - timeA; // 降序排列
+      });
+      
+      // 搜索筛选
+      if (searchText) {
+        accounts = accounts.filter(account =>
+          account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
+          account.country?.toLowerCase().includes(searchText.toLowerCase())
+        );
+      }
+      
+      // 状态筛选
+      if (statusFilter !== 'all') {
+        accounts = accounts.filter(account => account.account_status === statusFilter);
+      }
+      
+      // 审核状态筛选
+      if (auditFilter !== 'all') {
+        accounts = accounts.filter(account => account.audit_status === auditFilter);
+      }
+      
+      return accounts;
+    } catch (error) {
+      console.error('筛选账号数据时出错:', error);
+      return [];
     }
-    
-    // 按创建时间排序，最新的在前面
-    accounts.sort((a, b) => {
-      const timeA = new Date(a.created_at || '').getTime();
-      const timeB = new Date(b.created_at || '').getTime();
-      return timeB - timeA; // 降序排列
-    });
-    
-    // 搜索筛选
-    if (searchText) {
-      accounts = accounts.filter(account =>
-        account.tiktok_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.device_number?.toLowerCase().includes(searchText.toLowerCase()) ||
-        account.country?.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
-    
-    // 状态筛选
-    if (statusFilter !== 'all') {
-      accounts = accounts.filter(account => account.account_status === statusFilter);
-    }
-    
-    // 审核状态筛选
-    if (auditFilter !== 'all') {
-      accounts = accounts.filter(account => account.audit_status === auditFilter);
-    }
-    
-    return accounts;
   };
 
   const getStatusTag = (status: AccountStatus) => {
@@ -283,8 +290,15 @@ const Accounts: React.FC = () => {
       key: 'creator',
       width: 100,
       render: (_, record) => {
-        // 如果选择了特定组员，不显示创建者列（因为都是同一人）
-        if (selectedMember) return null;
+        // 如果选择了特定组员，显示该组员的信息
+        if (selectedMember) {
+          return (
+            <Space>
+              <UserOutlined />
+              <span>{selectedMember.username}</span>
+            </Space>
+          );
+        }
         
         // 从groupData中找到创建这个账号的组员
         const creator = groupData.find(member => 
@@ -341,12 +355,23 @@ const Accounts: React.FC = () => {
       title: '银行卡',
       key: 'bank_card',
       width: 140,
-      render: (_, record) => record.bank_card?.card_number ? (
-        <Space>
-          <BankOutlined />
-          <span>{record.bank_card.card_number.substring(0, 4)}***{record.bank_card.card_number.substring(record.bank_card.card_number.length - 4)}</span>
-        </Space>
-      ) : '-',
+      render: (_, record) => {
+        try {
+          const cardNumber = record.bank_card?.card_number;
+          if (cardNumber && typeof cardNumber === 'string' && cardNumber.length >= 8) {
+            return (
+              <Space>
+                <BankOutlined />
+                <span>{cardNumber.substring(0, 4)}***{cardNumber.substring(cardNumber.length - 4)}</span>
+              </Space>
+            );
+          }
+          return '-';
+        } catch (error) {
+          console.error('银行卡号格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '国家',
@@ -391,7 +416,14 @@ const Accounts: React.FC = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString(),
+      render: (time) => {
+        try {
+          return time ? new Date(time).toLocaleString() : '-';
+        } catch (error) {
+          console.error('日期格式化错误:', error);
+          return '-';
+        }
+      },
     },
     {
       title: '操作',
@@ -415,13 +447,20 @@ const Accounts: React.FC = () => {
 
   // 统计数据
   const getStatistics = () => {
-    const allAccounts = groupData.flatMap(member => member.accounts || []);
-    const totalAccounts = allAccounts.length;
-    const normalAccounts = allAccounts.filter(acc => acc.account_status === AccountStatus.NORMAL).length;
-    const pendingAccounts = allAccounts.filter(acc => acc.audit_status === AuditStatus.PENDING).length;
-    const approvedAccounts = allAccounts.filter(acc => acc.audit_status === AuditStatus.APPROVED).length;
+    try {
+      const allAccounts = Array.isArray(groupData) ? groupData.flatMap(member => 
+        Array.isArray(member.accounts) ? member.accounts : []
+      ) : [];
+      const totalAccounts = allAccounts.length;
+      const normalAccounts = allAccounts.filter(acc => acc.account_status === AccountStatus.NORMAL).length;
+      const pendingAccounts = allAccounts.filter(acc => acc.audit_status === AuditStatus.PENDING).length;
+      const approvedAccounts = allAccounts.filter(acc => acc.audit_status === AuditStatus.APPROVED).length;
 
-    return { totalAccounts, normalAccounts, pendingAccounts, approvedAccounts };
+      return { totalAccounts, normalAccounts, pendingAccounts, approvedAccounts };
+    } catch (error) {
+      console.error('统计数据计算出错:', error);
+      return { totalAccounts: 0, normalAccounts: 0, pendingAccounts: 0, approvedAccounts: 0 };
+    }
   };
 
   const statistics = getStatistics();
@@ -632,6 +671,14 @@ const Accounts: React.FC = () => {
               showTotal: (total) => `共 ${total} 条记录`,
               pageSize: 20,
             }}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="暂无数据"
+                />
+              ),
+            }}
           />
         </Card>
       </Card>
@@ -731,7 +778,7 @@ const Accounts: React.FC = () => {
                 label="手机型号"
               >
                 <Select placeholder="请选择手机型号" allowClear>
-                  {phoneModels.map(model => (
+                  {Array.isArray(phoneModels) && phoneModels.map(model => (
                     <Option key={model.id} value={model.id}>{model.name}</Option>
                   ))}
                 </Select>
@@ -743,7 +790,7 @@ const Accounts: React.FC = () => {
                 label="品类"
               >
                 <Select placeholder="请选择品类" allowClear>
-                  {categories.map(category => (
+                  {Array.isArray(categories) && categories.map(category => (
                     <Option key={category.id} value={category.id}>{category.name}</Option>
                   ))}
                 </Select>
@@ -758,7 +805,7 @@ const Accounts: React.FC = () => {
                 label="银行卡"
               >
                 <Select placeholder="请选择银行卡" allowClear>
-                  {bankCards.map(card => (
+                  {Array.isArray(bankCards) && bankCards.map(card => (
                     <Option key={card.id} value={card.id}>
                       {card.name}
                     </Option>
@@ -815,7 +862,7 @@ const Accounts: React.FC = () => {
                 label="代理IP"
               >
                 <Select placeholder="请选择代理IP" allowClear>
-                  {proxyIPs.map(proxy => (
+                  {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
                     <Option key={proxy.id} value={proxy.id}>
                       {proxy.name} ({proxy.host}:{proxy.port})
                     </Option>
