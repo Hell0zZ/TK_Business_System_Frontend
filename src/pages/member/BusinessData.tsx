@@ -425,8 +425,8 @@ const MemberBusinessData: React.FC = () => {
       children: [
         {
           title: '收入',
-          dataIndex: 'month_revenue',
-          key: 'month_revenue',
+      dataIndex: 'month_revenue',
+      key: 'month_revenue',
           width: 100,
           onHeaderCell: () => ({
             style: {
@@ -719,16 +719,16 @@ const MemberBusinessData: React.FC = () => {
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Row gutter={[12, 0]} align="middle" wrap={false} style={{ overflowX: 'auto', paddingBottom: '8px' }}>
               <Col flex="none">
-                <Space>
+        <Space>
                   <span style={{ fontSize: '13px', color: '#666' }}>账号名称:</span>
-                  <Input
+          <Input
                     size="small"
                     placeholder="TikTok账号"
                     value={searchFilters.accountName}
                     onChange={(e) => setSearchFilters(prev => ({ ...prev, accountName: e.target.value }))}
                     style={{ width: '120px' }}
-                    allowClear
-                  />
+            allowClear
+          />
                 </Space>
               </Col>
               
@@ -801,7 +801,7 @@ const MemberBusinessData: React.FC = () => {
                   type="dashed"
                 >
                   🗑️ 清空条件
-                </Button>
+          </Button>
               </Col>
               
               <Col flex="none">
@@ -817,7 +817,7 @@ const MemberBusinessData: React.FC = () => {
               </Col>
             </Row>
           </Space>
-        </Card>
+          </Card>
 
         {/* 数据展示标签页 */}
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
@@ -836,8 +836,8 @@ const MemberBusinessData: React.FC = () => {
                 pageSize: 20,
               }}
             />
-          </Tabs.TabPane>
-          
+        </Tabs.TabPane>
+
           <Tabs.TabPane tab="月度历史数据" key="history">
             <div style={{ marginBottom: 16 }}>
               <Space>
@@ -856,7 +856,7 @@ const MemberBusinessData: React.FC = () => {
                   ))}
                 </Select>
               </Space>
-            </div>
+                </div>
             
             <Table
               columns={historyColumns}
@@ -871,8 +871,8 @@ const MemberBusinessData: React.FC = () => {
                 pageSize: 20,
               }}
             />
-          </Tabs.TabPane>
-        </Tabs>
+        </Tabs.TabPane>
+      </Tabs>
       </Card>
     </div>
   );
