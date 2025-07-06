@@ -596,6 +596,7 @@ const OperationStats: React.FC = () => {
           type: 'bar',
           yAxisIndex: 0,
           data: revenueData,
+          barMaxWidth: 60, // 限制柱子最大宽度为60px
           itemStyle: {
             color: {
               type: 'linear',
@@ -624,6 +625,7 @@ const OperationStats: React.FC = () => {
           type: 'bar',
           yAxisIndex: 1,
           data: orderData,
+          barMaxWidth: 60, // 限制柱子最大宽度为60px
           itemStyle: {
             color: {
               type: 'linear',
