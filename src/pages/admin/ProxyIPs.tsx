@@ -72,17 +72,25 @@ interface UpdateProxyIPRequest {
   description?: string;
 }
 
+interface CountryOption {
+  id: number;
+  name: string;
+  code: string;
+}
+
 const ProxyIPs: React.FC = () => {
   const [proxyIPs, setProxyIPs] = useState<ProxyIP[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProxy, setEditingProxy] = useState<ProxyIP | null>(null);
   const [testingIds, setTestingIds] = useState<Set<number>>(new Set());
+	const [countries, setCountries] = useState<CountryOption[]>([]);
   
   const [form] = Form.useForm();
 
   useEffect(() => {
     fetchProxyIPs();
+		fetchCountries();
   }, []);
 
   const fetchProxyIPs = async () => {
@@ -103,6 +111,23 @@ const ProxyIPs: React.FC = () => {
       setLoading(false);
     }
   };
+
+	const fetchCountries = async () => {
+		try {
+			const response = await fetch('/api/countries', {
+				headers: {
+					'Authorization': `Bearer ${localStorage.getItem('token')}`
+				}
+			});
+			if (response.ok) {
+				const data = await response.json();
+				// 后端已按 sort_order ASC, name ASC 排序，保持顺序
+				setCountries(Array.isArray(data.data) ? data.data : []);
+			}
+		} catch (error) {
+			message.error('获取国家列表失败');
+		}
+	};
 
   const handleCreate = () => {
     setEditingProxy(null);
@@ -364,14 +389,11 @@ const ProxyIPs: React.FC = () => {
                 label="国家"
                 rules={[{ required: true, message: '请选择国家' }]}
               >
-                <Select placeholder="请选择国家">
-                  <Option value="US">美国</Option>
-                  <Option value="UK">英国</Option>
-                  <Option value="JP">日本</Option>
-                  <Option value="SG">新加坡</Option>
-                  <Option value="HK">香港</Option>
-                  <Option value="CN">中国</Option>
-                </Select>
+					<Select placeholder="请选择国家" showSearch optionFilterProp="children">
+						{countries.map((c) => (
+							<Option key={c.id} value={c.code}>{c.name}</Option>
+						))}
+					</Select>
               </Form.Item>
             </Col>
           </Row>
