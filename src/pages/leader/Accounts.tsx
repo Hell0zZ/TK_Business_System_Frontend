@@ -19,11 +19,13 @@ import {
   Divider,
   Tooltip,
   Avatar,
-  Empty
+  Empty,
+  Popconfirm
 } from 'antd';
 import {
   UserOutlined,
   EditOutlined,
+  DeleteOutlined,
   EyeOutlined,
   SearchOutlined,
   ReloadOutlined,
@@ -35,7 +37,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { TikTokAccount, UpdateTikTokAccountRequest, AccountStatus, AuditStatus } from '../../types/tiktokAccount';
-import { getGroupAccounts, getMemberAccounts, batchUpdateAccounts, adminEditTikTokAccount } from '../../services/tiktokAccounts';
+import { getGroupAccounts, getMemberAccounts, batchUpdateAccounts, adminEditTikTokAccount, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCurrentUser } from '../../utils/auth';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
 import { getAvailableProxyIPs } from '../../services/proxyIPs';
@@ -197,6 +199,20 @@ const Accounts: React.FC = () => {
       fetchGroupData();
     } catch (error) {
       message.error('批量更新失败');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteTikTokAccount(id);
+      message.success('TikTok账号删除成功');
+      if (selectedMember) {
+        fetchMemberData(selectedMember.id);
+      } else {
+        fetchGroupData();
+      }
+    } catch (error) {
+      message.error('删除失败');
     }
   };
 
@@ -428,7 +444,7 @@ const Accounts: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
+      width: 150,
       fixed: 'right',
       render: (_, record) => (
         <Space>
@@ -440,6 +456,22 @@ const Accounts: React.FC = () => {
           >
             编辑
           </Button>
+          <Popconfirm
+            title="确定要删除这个TikTok账号吗？"
+            description="删除后可以重新添加相同账号名来恢复"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button
+              type="link"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },

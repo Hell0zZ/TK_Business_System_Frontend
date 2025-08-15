@@ -16,10 +16,12 @@ import {
   Statistic,
   Tooltip,
   Divider,
-  Empty
+  Empty,
+  Popconfirm
 } from 'antd';
 import {
   EditOutlined,
+  DeleteOutlined,
   ReloadOutlined,
   PhoneOutlined,
   BankOutlined,
@@ -29,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { TikTokAccount, UpdateTikTokAccountRequest, AuditStatus } from '../../types/tiktokAccount';
-import { adminEditTikTokAccount, batchUpdateAccounts } from '../../services/tiktokAccounts';
+import { adminEditTikTokAccount, batchUpdateAccounts, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCurrentUser } from '../../utils/auth';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
 import { getAvailableProxyIPs } from '../../services/proxyIPs';
@@ -143,6 +145,16 @@ const TikTokAccounts: React.FC = () => {
       fetchAllAccounts();
     } catch (error) {
       message.error('账号更新失败');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteTikTokAccount(id);
+      message.success('TikTok账号删除成功');
+      fetchAllAccounts();
+    } catch (error) {
+      message.error('删除失败');
     }
   };
 
@@ -360,7 +372,7 @@ const TikTokAccounts: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 120,
+      width: 150,
       fixed: 'right',
       render: (_, record) => (
         <Space>
@@ -372,6 +384,22 @@ const TikTokAccounts: React.FC = () => {
           >
             编辑
           </Button>
+          <Popconfirm
+            title="确定要删除这个TikTok账号吗？"
+            description="删除后可以重新添加相同账号名来恢复"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button
+              type="link"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },

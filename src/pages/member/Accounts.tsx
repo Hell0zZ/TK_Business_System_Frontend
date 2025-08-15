@@ -15,11 +15,13 @@ import {
   Col,
   Statistic,
   Tooltip,
-  Empty
+  Empty,
+  Popconfirm
 } from 'antd';
 import {
   PlusOutlined,
   EditOutlined,
+  DeleteOutlined,
   PhoneOutlined,
   BankOutlined,
   GlobalOutlined,
@@ -29,7 +31,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { TikTokAccount, CreateTikTokAccountRequest, UpdateTikTokAccountRequest, AccountStatus, AuditStatus } from '../../types/tiktokAccount';
-import { createTikTokAccount, updateTikTokAccount } from '../../services/tiktokAccounts';
+import { createTikTokAccount, updateTikTokAccount, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
 import { getAvailableProxyIPs } from '../../services/proxyIPs';
 import { getCountryOptions } from '../../services/countries';
@@ -189,6 +191,16 @@ const MemberAccounts: React.FC = () => {
       console.error('账号更新失败:', error);
       const errorMessage = error?.message || '账号更新失败';
       message.error(errorMessage);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteTikTokAccount(id);
+      message.success('TikTok账号删除成功');
+      fetchMyAccounts();
+    } catch (error) {
+      message.error('删除失败');
     }
   };
 
@@ -381,15 +393,32 @@ const MemberAccounts: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 100,
+      width: 130,
       render: (_, record) => (
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => handleEdit(record)}
-        >
-          编辑
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
+            编辑
+          </Button>
+          <Popconfirm
+            title="确定要删除这个TikTok账号吗？"
+            description="删除后可以重新添加相同账号名来恢复"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+            >
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
