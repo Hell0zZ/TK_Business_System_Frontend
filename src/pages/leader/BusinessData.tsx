@@ -387,6 +387,8 @@ const LeaderBusinessData: React.FC = () => {
           dataIndex: 'today_revenue',
           key: 'today_revenue',
           width: 100,
+          sorter: (a, b) => (a.today_revenue || 0) - (b.today_revenue || 0),
+          showSorterTooltip: { title: '点击排序收入' },
           onHeaderCell: () => ({
             style: {
               backgroundColor: '#f8fbff',
@@ -410,6 +412,8 @@ const LeaderBusinessData: React.FC = () => {
           dataIndex: 'today_orders',
           key: 'today_orders',
           width: 80,
+          sorter: (a, b) => (a.today_orders || 0) - (b.today_orders || 0),
+          showSorterTooltip: { title: '点击排序订单' },
           onHeaderCell: () => ({
             style: {
               backgroundColor: '#f8fbff',
