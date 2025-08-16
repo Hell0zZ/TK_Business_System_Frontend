@@ -387,7 +387,7 @@ const MemberAccounts: React.FC = () => {
       render: (status) => getAuditTag(status),
     },
     {
-      title: '业务状态',
+      title: '账号状态',
       dataIndex: 'business_status',
       key: 'business_status',
       width: 100,
@@ -717,9 +717,9 @@ const MemberAccounts: React.FC = () => {
 
           <Form.Item
             name="business_status"
-            label="业务状态"
+            label="账号状态"
           >
-            <Select placeholder="请选择业务状态" defaultValue={BusinessStatus.NORMAL}>
+            <Select placeholder="请选择账号状态" defaultValue={BusinessStatus.NORMAL}>
               <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
               <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
             </Select>
@@ -888,9 +888,9 @@ const MemberAccounts: React.FC = () => {
 
           <Form.Item
             name="business_status"
-            label="业务状态"
+            label="账号状态"
           >
-            <Select placeholder="请选择业务状态">
+            <Select placeholder="请选择账号状态">
               <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
               <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
             </Select>
