@@ -57,6 +57,7 @@ const TikTokAccounts: React.FC = () => {
 
   const [auditFilter, setAuditFilter] = useState<string>('all');
   const [creatorFilter, setCreatorFilter] = useState<string>('all');
+  const [businessStatusFilter, setBusinessStatusFilter] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // 选项数据状态
@@ -214,6 +215,13 @@ const TikTokAccounts: React.FC = () => {
       // 创建者筛选
       if (creatorFilter !== 'all') {
         filteredAccounts = filteredAccounts.filter(account => account.user?.username === creatorFilter);
+      }
+
+      // 账号状态筛选
+      if (businessStatusFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => 
+          (account.business_status || BusinessStatus.NORMAL) === businessStatusFilter
+        );
       }
 
       return filteredAccounts;
@@ -513,7 +521,7 @@ const TikTokAccounts: React.FC = () => {
                 prefix={<SearchOutlined />}
               />
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <Select
                 placeholder="审核状态"
                 value={auditFilter}
@@ -524,6 +532,18 @@ const TikTokAccounts: React.FC = () => {
                 <SelectOption value={AuditStatus.PENDING}>待审核</SelectOption>
                 <SelectOption value={AuditStatus.APPROVED}>审核通过</SelectOption>
                 <SelectOption value={AuditStatus.REJECTED}>审核拒绝</SelectOption>
+              </Select>
+            </Col>
+            <Col span={3}>
+              <Select
+                placeholder="账号状态"
+                value={businessStatusFilter}
+                onChange={setBusinessStatusFilter}
+                style={{ width: '100%' }}
+              >
+                <SelectOption value="all">全部状态</SelectOption>
+                <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
               </Select>
             </Col>
             <Col span={4}>
@@ -543,7 +563,7 @@ const TikTokAccounts: React.FC = () => {
                 ))}
               </Select>
             </Col>
-            <Col span={11}>
+            <Col span={9}>
               <Space>
                 <Text type="secondary">
                   显示：<Text strong>{filteredAccounts.length}</Text> / <Text strong>{accounts.length}</Text> 个账号
