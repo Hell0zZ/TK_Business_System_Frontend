@@ -69,8 +69,8 @@ const Accounts: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TikTokAccount | null>(null);
   const [searchText, setSearchText] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [auditFilter, setAuditFilter] = useState<string>('all');
+  const [businessStatusFilter, setBusinessStatusFilter] = useState<string>('all');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // 选项数据状态
@@ -249,14 +249,16 @@ const Accounts: React.FC = () => {
         );
       }
       
-      // 状态筛选
-      if (statusFilter !== 'all') {
-        accounts = accounts.filter(account => account.account_status === statusFilter);
-      }
-      
       // 审核状态筛选
       if (auditFilter !== 'all') {
         accounts = accounts.filter(account => account.audit_status === auditFilter);
+      }
+      
+      // 业务状态筛选
+      if (businessStatusFilter !== 'all') {
+        accounts = accounts.filter(account => 
+          (account.business_status || BusinessStatus.NORMAL) === businessStatusFilter
+        );
       }
       
       return accounts;
@@ -370,13 +372,6 @@ const Accounts: React.FC = () => {
       key: 'node',
       width: 100,
       render: (node) => node || '-',
-    },
-    {
-      title: '账号状态',
-      dataIndex: 'account_status',
-      key: 'account_status',
-      width: 100,
-      render: (status) => getStatusTag(status),
     },
     {
       title: '分类',
@@ -663,27 +658,25 @@ const Accounts: React.FC = () => {
           {/* 筛选区域 */}
           <div style={{ marginBottom: 16 }}>
             <Row gutter={16}>
-              <Col span={6}>
+              <Col span={5}>
                 <Input
-                  placeholder="搜索TikTok名称、设备号、国家"
+                  placeholder="搜索TikTok名称、设备号、国家、创建者"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   allowClear
+                  prefix={<SearchOutlined />}
                 />
               </Col>
-              <Col span={4}>
+              <Col span={3}>
                 <Select
                   placeholder="账号状态"
-                  value={statusFilter}
-                  onChange={setStatusFilter}
+                  value={businessStatusFilter}
+                  onChange={setBusinessStatusFilter}
                   style={{ width: '100%' }}
                 >
                   <Option value="all">全部状态</Option>
-                  <Option value={AccountStatus.PENDING}>待检测</Option>
-                  <Option value={AccountStatus.NORMAL}>正常</Option>
-                  <Option value={AccountStatus.ABNORMAL}>异常</Option>
-                  <Option value={AccountStatus.BANNED}>封禁</Option>
-                  <Option value={AccountStatus.LIMITED}>限流</Option>
+                  <Option value={BusinessStatus.NORMAL}>正常</Option>
+                  <Option value={BusinessStatus.LIMITED}>受限</Option>
                 </Select>
               </Col>
               <Col span={4}>

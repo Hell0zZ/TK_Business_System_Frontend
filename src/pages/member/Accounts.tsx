@@ -47,8 +47,8 @@ const MemberAccounts: React.FC = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAccount, setEditingAccount] = useState<TikTokAccount | null>(null);
   const [searchText, setSearchText] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [auditFilter, setAuditFilter] = useState<string>('all');
+  const [businessStatusFilter, setBusinessStatusFilter] = useState<string>('all');
 
 
   // 选项数据状态
@@ -226,14 +226,16 @@ const MemberAccounts: React.FC = () => {
         );
       }
 
-      // 状态筛选
-      if (statusFilter !== 'all') {
-        filteredAccounts = filteredAccounts.filter(account => account.account_status === statusFilter);
-      }
-
       // 审核状态筛选
       if (auditFilter !== 'all') {
         filteredAccounts = filteredAccounts.filter(account => account.audit_status === auditFilter);
+      }
+
+      // 业务状态筛选
+      if (businessStatusFilter !== 'all') {
+        filteredAccounts = filteredAccounts.filter(account => 
+          (account.business_status || BusinessStatus.NORMAL) === businessStatusFilter
+        );
       }
 
       return filteredAccounts;
@@ -305,13 +307,6 @@ const MemberAccounts: React.FC = () => {
       key: 'node',
       width: 100,
       render: (node) => node || '-',
-    },
-    {
-      title: '账号状态',
-      dataIndex: 'account_status',
-      key: 'account_status',
-      width: 100,
-      render: (status) => getStatusTag(status),
     },
     {
       title: '分类',
@@ -528,17 +523,14 @@ const MemberAccounts: React.FC = () => {
             </Col>
             <Col>
               <Select
-                value={statusFilter}
-                onChange={setStatusFilter}
+                value={businessStatusFilter}
+                onChange={setBusinessStatusFilter}
                 style={{ width: 120 }}
                 placeholder="账号状态"
               >
                 <SelectOption value="all">全部状态</SelectOption>
-                <SelectOption value={AccountStatus.PENDING}>待检测</SelectOption>
-                <SelectOption value={AccountStatus.NORMAL}>正常</SelectOption>
-                <SelectOption value={AccountStatus.ABNORMAL}>异常</SelectOption>
-                <SelectOption value={AccountStatus.BANNED}>封禁</SelectOption>
-                <SelectOption value={AccountStatus.LIMITED}>限流</SelectOption>
+                <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
               </Select>
             </Col>
             <Col>
