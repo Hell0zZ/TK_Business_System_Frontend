@@ -765,13 +765,33 @@ const TikTokAccounts: React.FC = () => {
             </Row>
           </div>
 
+          {/* 业务状态 */}
+          <div style={{ marginBottom: 24 }}>
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#52c41a', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              📊 业务状态
+            </Typography.Title>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+                <Form.Item
+                  name="business_status"
+                  label="业务状态"
+                >
+                  <Select placeholder="请选择业务状态" size="large">
+                    <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                    <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </div>
+
           {/* 审核信息 */}
           <div style={{ marginBottom: 24 }}>
             <Typography.Title level={5} style={{ marginBottom: 16, color: '#fa8c16', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
               ✅ 审核信息
             </Typography.Title>
             <Row gutter={[16, 16]}>
-              <Col span={8}>
+              <Col span={12}>
                 <Form.Item
                   name="audit_status"
                   label="审核状态"
@@ -783,18 +803,7 @@ const TikTokAccounts: React.FC = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="business_status"
-                  label="业务状态"
-                >
-                  <Select placeholder="请选择业务状态" size="large">
-                    <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
-                    <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={8}>
+              <Col span={12}>
                 <Form.Item
                   name="audit_comment"
                   label="审核备注"
