@@ -36,7 +36,7 @@ import {
   GlobalOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { TikTokAccount, UpdateTikTokAccountRequest, AccountStatus, AuditStatus } from '../../types/tiktokAccount';
+import { TikTokAccount, UpdateTikTokAccountRequest, AccountStatus, AuditStatus, BusinessStatus } from '../../types/tiktokAccount';
 import { getGroupAccounts, getMemberAccounts, batchUpdateAccounts, adminEditTikTokAccount, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCurrentUser } from '../../utils/auth';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
@@ -154,6 +154,7 @@ const Accounts: React.FC = () => {
       proxy_ip_id: account.proxy_ip_id,
       audit_status: account.audit_status,
       audit_comment: account.audit_comment,
+      business_status: account.business_status || BusinessStatus.NORMAL,
       tiktok_cookie: account.business_data?.tiktok_cookie || ''
     });
   };
@@ -287,6 +288,15 @@ const Accounts: React.FC = () => {
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
+  const getBusinessStatusTag = (status: BusinessStatus) => {
+    const statusMap = {
+      [BusinessStatus.NORMAL]: { color: 'green', text: '正常' },
+      [BusinessStatus.LIMITED]: { color: 'orange', text: '受限' }
+    };
+    const config = statusMap[status] || { color: 'default', text: status || '正常' };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
   const columns: ColumnsType<TikTokAccount> = [
     {
       title: 'ID',
@@ -335,6 +345,13 @@ const Accounts: React.FC = () => {
       key: 'audit_status',
       width: 100,
       render: (status) => getAuditTag(status),
+    },
+    {
+      title: '业务状态',
+      dataIndex: 'business_status',
+      key: 'business_status',
+      width: 100,
+      render: (status) => getBusinessStatusTag(status || BusinessStatus.NORMAL),
     },
     {
       title: '手机型号',
@@ -911,6 +928,20 @@ const Accounts: React.FC = () => {
                   <Option value={AuditStatus.PENDING}>待审核</Option>
                   <Option value={AuditStatus.APPROVED}>审核通过</Option>
                   <Option value={AuditStatus.REJECTED}>审核拒绝</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="business_status"
+                label="业务状态"
+              >
+                <Select placeholder="请选择业务状态">
+                  <Option value={BusinessStatus.NORMAL}>正常</Option>
+                  <Option value={BusinessStatus.LIMITED}>受限</Option>
                 </Select>
               </Form.Item>
             </Col>

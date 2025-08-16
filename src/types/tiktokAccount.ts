@@ -17,6 +17,12 @@ export enum AuditStatus {
   REJECTED = '审核拒绝'
 }
 
+// 业务状态枚举
+export enum BusinessStatus {
+  NORMAL = '正常',
+  LIMITED = '受限'
+}
+
 // TikTok账号接口
 export interface TikTokAccount {
   id: number;
@@ -35,6 +41,7 @@ export interface TikTokAccount {
   phone_model_name?: string;
   node?: string;
   account_status: AccountStatus;
+  business_status?: BusinessStatus;
   category_id?: number;
   category?: {
     id: number;
@@ -73,6 +80,7 @@ export interface CreateTikTokAccountRequest {
   phone_model_id?: number;
   node?: string;
   account_status: AccountStatus;
+  business_status?: BusinessStatus;
   category_id?: number;
   bank_card_id?: number;
   country?: string;
@@ -89,6 +97,7 @@ export interface UpdateTikTokAccountRequest {
   phone_model_id?: number;
   node?: string;
   account_status?: AccountStatus;
+  business_status?: BusinessStatus;
   category_id?: number;
   bank_card_id?: number;
   country?: string;

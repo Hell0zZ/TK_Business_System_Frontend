@@ -30,7 +30,7 @@ import {
   SearchOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { TikTokAccount, UpdateTikTokAccountRequest, AuditStatus } from '../../types/tiktokAccount';
+import { TikTokAccount, UpdateTikTokAccountRequest, AuditStatus, BusinessStatus } from '../../types/tiktokAccount';
 import { adminEditTikTokAccount, batchUpdateAccounts, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCurrentUser } from '../../utils/auth';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
@@ -125,6 +125,7 @@ const TikTokAccounts: React.FC = () => {
       proxy_ip_id: account.proxy_ip_id,
       audit_status: account.audit_status,
       audit_comment: account.audit_comment,
+      business_status: account.business_status || BusinessStatus.NORMAL,
       tiktok_cookie: account.business_data?.tiktok_cookie || ''
     });
   };
@@ -229,6 +230,15 @@ const TikTokAccounts: React.FC = () => {
       [AuditStatus.REJECTED]: { color: 'error', text: '审核拒绝' }
     };
     const config = statusMap[status] || { color: 'default', text: status || '未知' };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  const getBusinessStatusTag = (status: BusinessStatus) => {
+    const statusMap = {
+      [BusinessStatus.NORMAL]: { color: 'green', text: '正常' },
+      [BusinessStatus.LIMITED]: { color: 'orange', text: '受限' }
+    };
+    const config = statusMap[status] || { color: 'default', text: status || '正常' };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
@@ -354,6 +364,13 @@ const TikTokAccounts: React.FC = () => {
       key: 'audit_status',
       width: 100,
       render: (status) => getAuditTag(status),
+    },
+    {
+      title: '业务状态',
+      dataIndex: 'business_status',
+      key: 'business_status',
+      width: 100,
+      render: (status) => getBusinessStatusTag(status || BusinessStatus.NORMAL),
     },
     {
       title: '创建时间',
@@ -757,7 +774,7 @@ const TikTokAccounts: React.FC = () => {
               审核信息
             </Typography.Title>
             <Row gutter={16}>
-              <Col span={12}>
+              <Col span={8}>
                 <Form.Item
                   name="audit_status"
                   label="审核状态"
@@ -769,12 +786,23 @@ const TikTokAccounts: React.FC = () => {
                   </Select>
                 </Form.Item>
               </Col>
-              <Col span={12}>
+              <Col span={8}>
+                <Form.Item
+                  name="business_status"
+                  label="业务状态"
+                >
+                  <Select placeholder="请选择业务状态">
+                    <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                    <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={8}>
                 <Form.Item
                   name="audit_comment"
                   label="审核备注"
                 >
-                  <Input.TextArea placeholder="请输入审核备注" />
+                  <Input placeholder="请输入审核备注" />
                 </Form.Item>
               </Col>
             </Row>

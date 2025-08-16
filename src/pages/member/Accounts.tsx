@@ -30,7 +30,7 @@ import {
   MobileOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { TikTokAccount, CreateTikTokAccountRequest, UpdateTikTokAccountRequest, AccountStatus, AuditStatus } from '../../types/tiktokAccount';
+import { TikTokAccount, CreateTikTokAccountRequest, UpdateTikTokAccountRequest, AccountStatus, AuditStatus, BusinessStatus } from '../../types/tiktokAccount';
 import { createTikTokAccount, updateTikTokAccount, deleteTikTokAccount } from '../../services/tiktokAccounts';
 import { getCategories, getPhoneModels, getBankCards, Option as ServiceOption } from '../../services/common';
 import { getAvailableProxyIPs } from '../../services/proxyIPs';
@@ -153,6 +153,7 @@ const MemberAccounts: React.FC = () => {
       phone_review: account.phone_review,
       remarks: account.remarks,
       proxy_ip_id: account.proxy_ip_id,
+      business_status: account.business_status || BusinessStatus.NORMAL,
       tiktok_cookie: account.business_data?.tiktok_cookie || ''
     });
   };
@@ -261,6 +262,15 @@ const MemberAccounts: React.FC = () => {
       [AuditStatus.REJECTED]: { color: 'error', text: '审核拒绝' }
     };
     const config = statusMap[status] || { color: 'default', text: status || '未知' };
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  const getBusinessStatusTag = (status: BusinessStatus) => {
+    const statusMap = {
+      [BusinessStatus.NORMAL]: { color: 'green', text: '正常' },
+      [BusinessStatus.LIMITED]: { color: 'orange', text: '受限' }
+    };
+    const config = statusMap[status] || { color: 'default', text: status || '正常' };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
@@ -375,6 +385,13 @@ const MemberAccounts: React.FC = () => {
       key: 'audit_status',
       width: 100,
       render: (status) => getAuditTag(status),
+    },
+    {
+      title: '业务状态',
+      dataIndex: 'business_status',
+      key: 'business_status',
+      width: 100,
+      render: (status) => getBusinessStatusTag(status || BusinessStatus.NORMAL),
     },
     {
       title: '创建时间',
@@ -699,6 +716,16 @@ const MemberAccounts: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            name="business_status"
+            label="业务状态"
+          >
+            <Select placeholder="请选择业务状态" defaultValue={BusinessStatus.NORMAL}>
+              <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+              <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
             name="remarks"
             label="备注"
           >
@@ -857,6 +884,16 @@ const MemberAccounts: React.FC = () => {
               placeholder="请输入对手机的点评" 
               rows={3}
             />
+          </Form.Item>
+
+          <Form.Item
+            name="business_status"
+            label="业务状态"
+          >
+            <Select placeholder="请选择业务状态">
+              <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+              <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+            </Select>
           </Form.Item>
 
           <Form.Item
