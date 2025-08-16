@@ -656,17 +656,17 @@ const TikTokAccounts: React.FC = () => {
         >
           {/* 基本信息 */}
           <div style={{ marginBottom: 24 }}>
-            <Typography.Title level={5} style={{ marginBottom: 16, color: '#1890ff' }}>
-              基本信息
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#1890ff', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              📝 基本信息
             </Typography.Title>
-            <Row gutter={16}>
+            <Row gutter={[16, 16]}>
               <Col span={12}>
                 <Form.Item
                   name="tiktok_name"
                   label="TikTok名称"
                   rules={[{ required: true, message: '请输入TikTok名称' }]}
                 >
-                  <Input placeholder="请输入TikTok名称" />
+                  <Input placeholder="请输入TikTok名称" size="large" />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -674,17 +674,15 @@ const TikTokAccounts: React.FC = () => {
                   name="node"
                   label="节点"
                 >
-                  <Input placeholder="请输入节点" />
+                  <Input placeholder="请输入节点" size="large" />
                 </Form.Item>
               </Col>
-            </Row>
-            <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="device_number"
                   label="设备号"
                 >
-                  <Input placeholder="请输入设备号" />
+                  <Input placeholder="请输入设备号" size="large" />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -694,6 +692,7 @@ const TikTokAccounts: React.FC = () => {
                 >
                   <Select 
                     placeholder="请选择国家" 
+                    size="large"
                     showSearch
                     filterOption={(input, option) =>
                       (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -707,16 +706,16 @@ const TikTokAccounts: React.FC = () => {
 
           {/* 配置信息 */}
           <div style={{ marginBottom: 24 }}>
-            <Typography.Title level={5} style={{ marginBottom: 16, color: '#52c41a' }}>
-              配置信息
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#52c41a', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              ⚙️ 配置信息
             </Typography.Title>
-            <Row gutter={16}>
+            <Row gutter={[16, 16]}>
               <Col span={12}>
                 <Form.Item
                   name="phone_model_id"
                   label="手机型号"
                 >
-                  <Select placeholder="请选择手机型号" allowClear>
+                  <Select placeholder="请选择手机型号" allowClear size="large">
                     {Array.isArray(phoneModels) && phoneModels.map(model => (
                       <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
                     ))}
@@ -728,21 +727,19 @@ const TikTokAccounts: React.FC = () => {
                   name="category_id"
                   label="品类"
                 >
-                  <Select placeholder="请选择品类" allowClear>
+                  <Select placeholder="请选择品类" allowClear size="large">
                     {Array.isArray(categories) && categories.map(category => (
                       <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
                     ))}
                   </Select>
                 </Form.Item>
               </Col>
-            </Row>
-            <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="bank_card_id"
                   label="银行卡"
                 >
-                  <Select placeholder="请选择银行卡" allowClear>
+                  <Select placeholder="请选择银行卡" allowClear size="large">
                     {Array.isArray(bankCards) && bankCards.map(card => (
                       <SelectOption key={card.id} value={card.id}>
                         {card.name}
@@ -756,7 +753,7 @@ const TikTokAccounts: React.FC = () => {
                   name="proxy_ip_id"
                   label="代理IP"
                 >
-                  <Select placeholder="请选择代理IP" allowClear>
+                  <Select placeholder="请选择代理IP" allowClear size="large">
                     {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
                       <SelectOption key={proxy.id} value={proxy.id}>
                         {proxy.name} ({proxy.host}:{proxy.port})
@@ -770,16 +767,16 @@ const TikTokAccounts: React.FC = () => {
 
           {/* 审核信息 */}
           <div style={{ marginBottom: 24 }}>
-            <Typography.Title level={5} style={{ marginBottom: 16, color: '#fa8c16' }}>
-              审核信息
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#fa8c16', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              ✅ 审核信息
             </Typography.Title>
-            <Row gutter={16}>
+            <Row gutter={[16, 16]}>
               <Col span={8}>
                 <Form.Item
                   name="audit_status"
                   label="审核状态"
                 >
-                  <Select placeholder="请选择审核状态">
+                  <Select placeholder="请选择审核状态" size="large">
                     <SelectOption value={AuditStatus.PENDING}>待审核</SelectOption>
                     <SelectOption value={AuditStatus.APPROVED}>审核通过</SelectOption>
                     <SelectOption value={AuditStatus.REJECTED}>审核拒绝</SelectOption>
@@ -791,7 +788,7 @@ const TikTokAccounts: React.FC = () => {
                   name="business_status"
                   label="业务状态"
                 >
-                  <Select placeholder="请选择业务状态">
+                  <Select placeholder="请选择业务状态" size="large">
                     <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
                     <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
                   </Select>
@@ -802,11 +799,17 @@ const TikTokAccounts: React.FC = () => {
                   name="audit_comment"
                   label="审核备注"
                 >
-                  <Input placeholder="请输入审核备注" />
+                  <Input placeholder="请输入审核备注" size="large" />
                 </Form.Item>
               </Col>
             </Row>
+          </div>
 
+          {/* Cookie信息 */}
+          <div style={{ marginBottom: 24 }}>
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#13c2c2', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              🍪 Cookie信息
+            </Typography.Title>
             <Form.Item
               label="TikTok Cookie"
               name="tiktok_cookie"
@@ -816,14 +819,18 @@ const TikTokAccounts: React.FC = () => {
                 placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
                 maxLength={8000}
                 showCount
+                style={{ 
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
               />
             </Form.Item>
           </div>
 
           {/* 其他信息 */}
           <div style={{ marginBottom: 24 }}>
-            <Typography.Title level={5} style={{ marginBottom: 16, color: '#722ed1' }}>
-              其他信息
+            <Typography.Title level={5} style={{ marginBottom: 16, color: '#722ed1', borderBottom: '2px solid #f0f0f0', paddingBottom: '8px' }}>
+              📝 其他信息
             </Typography.Title>
             <Form.Item
               name="remarks"
@@ -834,17 +841,42 @@ const TikTokAccounts: React.FC = () => {
                 rows={3}
                 showCount
                 maxLength={500}
+                style={{ 
+                  borderRadius: '8px',
+                  fontSize: '14px'
+                }}
               />
             </Form.Item>
           </div>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right', borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-            <Space size="middle">
-              <Button size="large" onClick={() => setEditModalVisible(false)}>
+          <Form.Item style={{ 
+            marginBottom: 0, 
+            textAlign: 'right', 
+            borderTop: '2px solid #f0f0f0', 
+            paddingTop: 20,
+            marginTop: 8
+          }}>
+            <Space size="large">
+              <Button 
+                size="large" 
+                onClick={() => setEditModalVisible(false)}
+                style={{ minWidth: '100px', borderRadius: '6px' }}
+              >
                 取消
               </Button>
-              <Button type="primary" size="large" htmlType="submit">
-                更新账号
+              <Button 
+                type="primary" 
+                size="large" 
+                htmlType="submit"
+                style={{ 
+                  minWidth: '120px', 
+                  borderRadius: '6px',
+                  background: 'linear-gradient(45deg, #1890ff, #40a9ff)',
+                  border: 'none',
+                  fontWeight: 'bold'
+                }}
+              >
+                💾 更新账号
               </Button>
             </Space>
           </Form.Item>
