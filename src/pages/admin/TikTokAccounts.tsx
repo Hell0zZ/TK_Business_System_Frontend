@@ -411,7 +411,7 @@ const TikTokAccounts: React.FC = () => {
           </Button>
           <Popconfirm
             title="确定要删除这个TikTok账号吗？"
-            description="删除后可以重新添加相同账号名来恢复"
+            okButtonProps={{ danger: true }}
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
@@ -667,197 +667,166 @@ const TikTokAccounts: React.FC = () => {
         open={editModalVisible}
         onCancel={() => setEditModalVisible(false)}
         footer={null}
-        width={800}
+        width={1000}
       >
         <Form
           form={editForm}
           layout="vertical"
           onFinish={handleEditSubmit}
         >
-          {/* 基本信息 */}
-          <div style={{ marginBottom: 20 }}>
-            <Typography.Title level={5} style={{ marginBottom: 12, color: '#1890ff', borderBottom: '1px solid #f0f0f0', paddingBottom: '6px' }}>
-              📝 基本信息
-            </Typography.Title>
-            <Row gutter={[12, 12]}>
-              <Col span={8}>
-                <Form.Item
-                  name="tiktok_name"
-                  label="TikTok名称"
-                  rules={[{ required: true, message: '请输入TikTok名称' }]}
+          <Row gutter={[24, 16]} align="stretch">
+            {/* Left Column */}
+            <Col span={12}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Card title="📝 基本信息" bordered={false} style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
+                  <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                      <Form.Item
+                        name="tiktok_name"
+                        label="TikTok名称"
+                        rules={[{ required: true, message: '请输入TikTok账号名称' }]}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <Input placeholder="请输入TikTok账号名称" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="node" label="节点" style={{ marginBottom: 0 }}>
+                        <Input placeholder="请输入节点" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="device_number" label="设备号" style={{ marginBottom: 0 }}>
+                        <Input placeholder="请输入设备号" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="country" label="国家" style={{ marginBottom: 0 }}>
+                        <Select
+                          placeholder="请选择国家"
+                          showSearch
+                          filterOption={(input, option) =>
+                            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                          }
+                          options={countryOptions}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="business_status" label="账号状态" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择账号状态">
+                          <Select.Option value={BusinessStatus.NORMAL}>正常</Select.Option>
+                          <Select.Option value={BusinessStatus.LIMITED}>受限</Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+                <Card 
+                  title="⚙️ 配置信息" 
+                  bordered={false} 
+                  style={{ marginTop: 24, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}
+                  bodyStyle={{ flex: 1 }}
                 >
-                  <Input placeholder="请输入TikTok名称" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="node"
-                  label="节点"
-                >
-                  <Input placeholder="请输入节点" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="device_number"
-                  label="设备号"
-                >
-                  <Input placeholder="请输入设备号" />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="country"
-                  label="国家"
-                >
-                  <Select 
-                    placeholder="请选择国家" 
-                    showSearch
-                    filterOption={(input, option) =>
-                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                    options={countryOptions}
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="business_status"
-                  label="账号状态"
-                >
-                  <Select placeholder="请选择账号状态">
-                    <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
-                    <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Form.Item name="phone_model_id" label="手机型号" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择手机型号" allowClear>
+                          {Array.isArray(phoneModels) && phoneModels.map(model => (
+                            <Select.Option key={model.id} value={model.id}>{model.name}</Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="category_id" label="品类" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择品类" allowClear>
+                          {Array.isArray(categories) && categories.map(category => (
+                            <Select.Option key={category.id} value={category.id}>{category.name}</Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="bank_card_id" label="银行卡" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择银行卡" allowClear>
+                          {Array.isArray(bankCards) && bankCards.map(card => (
+                            <Select.Option key={card.id} value={card.id}>
+                              {card.name}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="proxy_ip_id" label="代理IP" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择代理IP" allowClear>
+                          {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
+                            <Select.Option key={proxy.id} value={proxy.id}>
+                              {proxy.name} ({proxy.host}:{proxy.port})
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+              </div>
+            </Col>
 
-          {/* 配置信息 */}
-          <div style={{ marginBottom: 20 }}>
-            <Typography.Title level={5} style={{ marginBottom: 12, color: '#52c41a', borderBottom: '1px solid #f0f0f0', paddingBottom: '6px' }}>
-              ⚙️ 配置信息
-            </Typography.Title>
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <Form.Item
-                  name="phone_model_id"
-                  label="手机型号"
+            {/* Right Column */}
+            <Col span={12}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <Card title="✅ 审核信息" bordered={false} style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
+                  <Row gutter={[16, 16]}>
+                    <Col span={12}>
+                      <Form.Item name="audit_status" label="审核状态" style={{ marginBottom: 0 }}>
+                        <Select placeholder="请选择审核状态">
+                          <Select.Option value={AuditStatus.PENDING}>待审核</Select.Option>
+                          <Select.Option value={AuditStatus.APPROVED}>审核通过</Select.Option>
+                          <Select.Option value={AuditStatus.REJECTED}>审核拒绝</Select.Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="audit_comment" label="审核备注" style={{ marginBottom: 0 }}>
+                        <Input placeholder="请输入审核备注" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+                <Card 
+                  title="📝 其他信息" 
+                  bordered={false} 
+                  style={{ marginTop: 24, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', flex: 1, display: 'flex', flexDirection: 'column' }}
+                  bodyStyle={{ flex: 1 }}
                 >
-                  <Select placeholder="请选择手机型号" allowClear>
-                    {Array.isArray(phoneModels) && phoneModels.map(model => (
-                      <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="category_id"
-                  label="品类"
-                >
-                  <Select placeholder="请选择品类" allowClear>
-                    {Array.isArray(categories) && categories.map(category => (
-                      <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="bank_card_id"
-                  label="银行卡"
-                >
-                  <Select placeholder="请选择银行卡" allowClear>
-                    {Array.isArray(bankCards) && bankCards.map(card => (
-                      <SelectOption key={card.id} value={card.id}>
-                        {card.name}
-                      </SelectOption>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="proxy_ip_id"
-                  label="代理IP"
-                >
-                  <Select placeholder="请选择代理IP" allowClear>
-                    {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
-                      <SelectOption key={proxy.id} value={proxy.id}>
-                        {proxy.name} ({proxy.host}:{proxy.port})
-                      </SelectOption>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
-
-          {/* 审核信息 */}
-          <div style={{ marginBottom: 20 }}>
-            <Typography.Title level={5} style={{ marginBottom: 12, color: '#fa8c16', borderBottom: '1px solid #f0f0f0', paddingBottom: '6px' }}>
-              ✅ 审核信息
-            </Typography.Title>
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <Form.Item
-                  name="audit_status"
-                  label="审核状态"
-                >
-                  <Select placeholder="请选择审核状态">
-                    <SelectOption value={AuditStatus.PENDING}>待审核</SelectOption>
-                    <SelectOption value={AuditStatus.APPROVED}>审核通过</SelectOption>
-                    <SelectOption value={AuditStatus.REJECTED}>审核拒绝</SelectOption>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="audit_comment"
-                  label="审核备注"
-                >
-                  <Input placeholder="请输入审核备注" />
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
-
-          {/* Cookie与备注 */}
-          <div style={{ marginBottom: 20 }}>
-            <Typography.Title level={5} style={{ marginBottom: 12, color: '#13c2c2', borderBottom: '1px solid #f0f0f0', paddingBottom: '6px' }}>
-              📝 其他信息
-            </Typography.Title>
-            <Row gutter={[12, 12]}>
-              <Col span={24}>
-                <Form.Item
-                  label="TikTok Cookie"
-                  name="tiktok_cookie"
-                >
-                  <Input.TextArea 
-                    rows={3}
-                    placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
-                    maxLength={8000}
-                    showCount
-                  />
-                </Form.Item>
-              </Col>
-              <Col span={24}>
-                <Form.Item
-                  name="remarks"
-                  label="备注"
-                >
-                  <Input.TextArea 
-                    placeholder="请输入备注" 
-                    rows={2}
-                    showCount
-                    maxLength={500}
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
+                  <Row gutter={[16, 16]}>
+                    <Col span={24}>
+                      <Form.Item label="TikTok Cookie" name="tiktok_cookie" style={{ marginBottom: 0 }}>
+                        <Input.TextArea
+                          rows={4}
+                          placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
+                          maxLength={8000}
+                          showCount
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                      <Form.Item name="remarks" label="备注" style={{ marginBottom: 0 }}>
+                        <Input.TextArea
+                          placeholder="请输入备注"
+                          rows={4}
+                          showCount
+                          maxLength={500}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+              </div>
+            </Col>
+          </Row>
 
           <Form.Item style={{ 
             marginBottom: 0, 
@@ -888,4 +857,4 @@ const TikTokAccounts: React.FC = () => {
   );
 };
 
-export default TikTokAccounts; 
+export default TikTokAccounts;

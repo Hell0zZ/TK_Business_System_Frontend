@@ -405,11 +405,13 @@ const MemberAccounts: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 130,
+      width: 150,
+      fixed: 'right', // 新增此行，将操作列固定在右侧
       render: (_, record) => (
         <Space>
           <Button
             type="link"
+            size="small"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           >
@@ -417,13 +419,13 @@ const MemberAccounts: React.FC = () => {
           </Button>
           <Popconfirm
             title="确定要删除这个TikTok账号吗？"
-            description="删除后可以重新添加相同账号名来恢复"
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
           >
             <Button
               type="link"
+              size="small"
               danger
               icon={<DeleteOutlined />}
             >
@@ -592,152 +594,147 @@ const MemberAccounts: React.FC = () => {
           layout="vertical"
           onFinish={handleCreateSubmit}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="tiktok_name"
-                label="TikTok名称"
-                rules={[{ required: true, message: '请输入TikTok名称' }]}
-              >
-                <Input placeholder="请输入TikTok名称" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="country"
-                label="国家/地区"
-                rules={[{ required: true, message: '请选择国家/地区' }]}
-              >
-                <Select 
-                  placeholder="请选择国家/地区" 
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={countryOptions}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+            {/* 左侧栏 */}
+            <div style={{ flex: 1 }}>
+              <Card title="基本信息" style={{ marginBottom: '20px' }}>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="tiktok_name"
+                      label="TikTok名称"
+                      rules={[{ required: true, message: '请输入TikTok名称' }]}
+                    >
+                      <Input placeholder="请输入TikTok名称" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="country"
+                      label="国家/地区"
+                      rules={[{ required: true, message: '请选择国家/地区' }]}
+                    >
+                      <Select 
+                        placeholder="请选择国家/地区" 
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={countryOptions}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="device_number"
+                      label="设备号"
+                    >
+                      <Input placeholder="请输入设备号" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="business_status"
+                      label="账号状态"
+                    >
+                      <Select placeholder="请选择账号状态" defaultValue={BusinessStatus.NORMAL}>
+                        <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                        <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+              <Card title="配置信息">
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="phone_model_id"
+                      label="手机型号"
+                    >
+                      <Select placeholder="请选择手机型号" allowClear>
+                        {Array.isArray(phoneModels) && phoneModels.map(model => (
+                          <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="category_id"
+                      label="品类"
+                    >
+                      <Select placeholder="请选择品类" allowClear>
+                        {Array.isArray(categories) && categories.map(category => (
+                          <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="bank_card_id"
+                      label="银行卡"
+                    >
+                      <Select placeholder="请选择银行卡" allowClear>
+                        {Array.isArray(bankCards) && bankCards.map(card => (
+                          <SelectOption key={card.id} value={card.id}>
+                            {card.name}
+                          </SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="proxy_ip_id"
+                      label="代理IP"
+                    >
+                      <Select placeholder="请选择代理IP" allowClear>
+                        {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
+                          <SelectOption key={proxy.id} value={proxy.id}>
+                            {proxy.name} ({proxy.host}:{proxy.port})
+                          </SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+            </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="phone_model_id"
-                label="手机型号"
-              >
-                <Select placeholder="请选择手机型号" allowClear>
-                  {Array.isArray(phoneModels) && phoneModels.map(model => (
-                    <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="node"
-                label="节点"
-              >
-                <Input placeholder="请输入节点" />
-              </Form.Item>
-            </Col>
-          </Row>
+            {/* 右侧栏 */}
+            <div style={{ flex: 1 }}>
+              <Card title="其他信息">
+                <Form.Item
+                  name="tiktok_cookie"
+                  label="TikTok Cookie"
+                >
+                  <Input.TextArea 
+                    placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）" 
+                    rows={5}
+                    maxLength={8000}
+                    showCount
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="remarks"
+                  label="备注"
+                >
+                  <Input.TextArea 
+                    placeholder="请输入备注" 
+                    rows={3}
+                  />
+                </Form.Item>
+              </Card>
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="category_id"
-                label="品类"
-              >
-                <Select placeholder="请选择品类" allowClear>
-                  {Array.isArray(categories) && categories.map(category => (
-                    <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="bank_card_id"
-                label="银行卡"
-              >
-                <Select placeholder="请选择银行卡" allowClear>
-                  {Array.isArray(bankCards) && bankCards.map(card => (
-                    <SelectOption key={card.id} value={card.id}>
-                      {card.name}
-                    </SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="device_number"
-                label="设备号"
-              >
-                <Input placeholder="请输入设备号" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="proxy_ip_id"
-                label="代理IP"
-              >
-                <Select placeholder="请选择代理IP" allowClear>
-                  {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
-                    <SelectOption key={proxy.id} value={proxy.id}>
-                      {proxy.name} ({proxy.host}:{proxy.port})
-                    </SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="phone_review"
-            label="手机点评"
-          >
-            <Input.TextArea 
-              placeholder="请输入对手机的点评" 
-              rows={3}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="business_status"
-            label="账号状态"
-          >
-            <Select placeholder="请选择账号状态" defaultValue={BusinessStatus.NORMAL}>
-              <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
-              <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="remarks"
-            label="备注"
-          >
-            <Input.TextArea 
-              placeholder="请输入备注" 
-              rows={3}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="TikTok Cookie"
-            name="tiktok_cookie"
-          >
-            <Input.TextArea 
-              rows={4}
-              placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
-              maxLength={8000}
-              showCount
-            />
-          </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
@@ -765,147 +762,112 @@ const MemberAccounts: React.FC = () => {
           layout="vertical"
           onFinish={handleEditSubmit}
         >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="tiktok_name"
-                label="TikTok名称"
-              >
-                <Input placeholder="请输入TikTok名称" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="country"
-                label="国家/地区"
-              >
-                <Select 
-                  placeholder="请选择国家/地区" 
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                  }
-                  options={countryOptions}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+            {/* 左侧栏 */}
+            <div style={{ flex: 1 }}>
+              <Card title="基本信息" style={{ marginBottom: '20px' }}>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name="tiktok_name" label="TikTok名称">
+                      <Input placeholder="请输入TikTok名称" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="country" label="国家/地区">
+                      <Select
+                        placeholder="请选择国家/地区"
+                        showSearch
+                        filterOption={(input, option) =>
+                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                        }
+                        options={countryOptions}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name="device_number" label="设备号">
+                      <Input placeholder="请输入设备号" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="business_status" label="账号状态">
+                      <Select placeholder="请选择账号状态">
+                        <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
+                        <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+              <Card title="配置信息">
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name="phone_model_id" label="手机型号">
+                      <Select placeholder="请选择手机型号" allowClear>
+                        {Array.isArray(phoneModels) && phoneModels.map(model => (
+                          <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="category_id" label="品类">
+                      <Select placeholder="请选择品类" allowClear>
+                        {Array.isArray(categories) && categories.map(category => (
+                          <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item name="bank_card_id" label="银行卡">
+                      <Select placeholder="请选择银行卡" allowClear>
+                        {Array.isArray(bankCards) && bankCards.map(card => (
+                          <SelectOption key={card.id} value={card.id}>
+                            {card.name}
+                          </SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item name="proxy_ip_id" label="代理IP">
+                      <Select placeholder="请选择代理IP" allowClear>
+                        {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
+                          <SelectOption key={proxy.id} value={proxy.id}>
+                            {proxy.name} ({proxy.host}:{proxy.port})
+                          </SelectOption>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+            </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="phone_model_id"
-                label="手机型号"
-              >
-                <Select placeholder="请选择手机型号" allowClear>
-                  {Array.isArray(phoneModels) && phoneModels.map(model => (
-                    <SelectOption key={model.id} value={model.id}>{model.name}</SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="node"
-                label="节点"
-              >
-                <Input placeholder="请输入节点" />
-              </Form.Item>
-            </Col>
-          </Row>
+            {/* 右侧栏 */}
+            <div style={{ flex: 1 }}>
+              <Card title="其他信息">
+                <Form.Item label="TikTok Cookie" name="tiktok_cookie">
+                  <Input.TextArea
+                    rows={5}
+                    placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
+                    maxLength={8000}
+                    showCount
+                  />
+                </Form.Item>
+                <Form.Item label="备注" name="remarks">
+                  <Input.TextArea rows={5} placeholder="请输入备注信息" />
+                </Form.Item>
+              </Card>
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="category_id"
-                label="品类"
-              >
-                <Select placeholder="请选择品类" allowClear>
-                  {Array.isArray(categories) && categories.map(category => (
-                    <SelectOption key={category.id} value={category.id}>{category.name}</SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="bank_card_id"
-                label="银行卡"
-              >
-                <Select placeholder="请选择银行卡" allowClear>
-                  {Array.isArray(bankCards) && bankCards.map(card => (
-                    <SelectOption key={card.id} value={card.id}>
-                      {card.name}
-                    </SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="device_number"
-                label="设备号"
-              >
-                <Input placeholder="请输入设备号" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="proxy_ip_id"
-                label="代理IP"
-              >
-                <Select placeholder="请选择代理IP" allowClear>
-                  {Array.isArray(proxyIPs) && proxyIPs.map(proxy => (
-                    <SelectOption key={proxy.id} value={proxy.id}>
-                      {proxy.name} ({proxy.host}:{proxy.port})
-                    </SelectOption>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="phone_review"
-            label="手机点评"
-          >
-            <Input.TextArea 
-              placeholder="请输入对手机的点评" 
-              rows={3}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="business_status"
-            label="账号状态"
-          >
-            <Select placeholder="请选择账号状态">
-              <SelectOption value={BusinessStatus.NORMAL}>正常</SelectOption>
-              <SelectOption value={BusinessStatus.LIMITED}>受限</SelectOption>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="备注"
-            name="remarks"
-          >
-            <Input.TextArea placeholder="请输入备注信息" />
-          </Form.Item>
-
-          <Form.Item
-            label="TikTok Cookie"
-            name="tiktok_cookie"
-          >
-            <Input.TextArea 
-              rows={4}
-              placeholder="请输入TikTok账号Cookie信息（用于获取经营数据）"
-              maxLength={8000}
-              showCount
-            />
-          </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
@@ -923,4 +885,4 @@ const MemberAccounts: React.FC = () => {
   );
 };
 
-export default MemberAccounts; 
+export default MemberAccounts;
