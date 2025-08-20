@@ -149,8 +149,6 @@ const MemberAccounts: React.FC = () => {
       category_id: account.category_id,
       bank_card_id: account.bank_card_id,
       country: account.country,
-      device_number: account.device_number,
-      phone_review: account.phone_review,
       remarks: account.remarks,
       proxy_ip_id: account.proxy_ip_id,
       business_status: account.business_status || BusinessStatus.NORMAL,
@@ -628,10 +626,10 @@ const MemberAccounts: React.FC = () => {
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item
-                      name="device_number"
-                      label="设备号"
+                      name="node"
+                      label="节点"
                     >
-                      <Input placeholder="请输入设备号" />
+                      <Input placeholder="请输入节点" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -787,8 +785,8 @@ const MemberAccounts: React.FC = () => {
                 </Row>
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="device_number" label="设备号">
-                      <Input placeholder="请输入设备号" />
+                    <Form.Item name="node" label="节点">
+                      <Input placeholder="请输入节点" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
