@@ -46,16 +46,17 @@ import {
   ReloadOutlined,
   DisconnectOutlined
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
-import 'dayjs/locale/zh-cn';
+import moment from 'moment';
+import type { Moment } from 'moment';
+// 删除 dayjs 的中文本地化导入
+// import 'dayjs/locale/zh-cn';
 import zhCN from 'antd/es/locale/zh_CN';
 import ReactECharts from 'echarts-for-react';
 import { getCountries, Country } from '../../services/countries';
 import { getOperationStats, OperationStatsParams, OperationStatsData } from '../../services/admin';
 
-// 设置dayjs为中文
-dayjs.locale('zh-cn');
+// 设置 moment 为中文
+moment.locale('zh-cn');
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -71,8 +72,8 @@ interface GroupData {
 
 const OperationStats: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [isToday, setIsToday] = useState<boolean>(true); // 默认选择今日
-  const [selectedMonth, setSelectedMonth] = useState<any>(null); // 默认不选择月份
+  const [isToday, setIsToday] = useState<boolean>(true); // 默认选择今日（按日模式）
+  const [selectedMonth, setSelectedMonth] = useState<Moment | null>(null); // 默认不选择月份
   const [selectedCountry, setSelectedCountry] = useState<number>(1); // 默认美国ID为1
   const [availableCountries, setAvailableCountries] = useState<Country[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
@@ -81,6 +82,8 @@ const OperationStats: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
   // 组员排行榜显示模式：true=显示全部，false=只显示TOP10
   const [showAllMembers, setShowAllMembers] = useState<boolean>(false);
+  // 新增：按日选择的具体日期，默认今天
+  const [selectedDate, setSelectedDate] = useState<Moment>(moment());
 
   // 切换小组展开状态
   const toggleGroupExpand = (groupId: number) => {
@@ -172,18 +175,21 @@ const OperationStats: React.FC = () => {
   const fetchCountries = async () => {
     try {
       const data = await getCountries();
-      // 只显示启用的国家，按排序顺序排列
+      // 只显示启用的国家，按排序顺序排列；若为空则回退为后端返回的全部国家（已按排序）
       const enabledCountries = data.filter(country => country.enabled)
                                    .sort((a, b) => a.sort_order - b.sort_order);
-      setAvailableCountries(enabledCountries);
+      const finalCountries = enabledCountries.length > 0 ? enabledCountries : [...data].sort((a, b) => a.sort_order - b.sort_order);
+      setAvailableCountries(finalCountries);
       
       // 如果当前选择的国家不在列表中，设置为第一个国家
-      if (enabledCountries.length > 0 && !enabledCountries.find(c => c.id === selectedCountry)) {
-        setSelectedCountry(enabledCountries[0].id);
+      if (finalCountries.length > 0 && !finalCountries.find(c => c.id === selectedCountry)) {
+        setSelectedCountry(finalCountries[0].id);
       }
     } catch (error) {
       console.error('获取国家列表失败:', error);
       message.error('获取国家列表失败');
+      // 确保失败时不会一直转圈
+      setLoading(false);
     }
   };
 
@@ -198,6 +204,11 @@ const OperationStats: React.FC = () => {
         country_id: selectedCountry,
         detail_level: 'member'
       };
+
+      // 在“按日模式”下，总是携带具体日期参数（YYYY-MM-DD）
+      if (isToday && selectedDate) {
+        params.date = selectedDate.format('YYYY-MM-DD');
+      }
 
       // 如果选择了月份，添加date参数
       if (!isToday && selectedMonth) {
@@ -233,13 +244,14 @@ const OperationStats: React.FC = () => {
     if (availableCountries.length > 0) { // 确保国家列表已加载
       fetchOperationStats();
     }
-  }, [isToday, selectedMonth, selectedCountry]);
+  }, [isToday, selectedMonth, selectedCountry, selectedDate]);
 
   const getTimeTitle = () => {
     const countryText = availableCountries.find(c => c.id === selectedCountry)?.name || '未知国家';
     
     if (isToday) {
-      return `今日数据 (${dayjs().format('YYYY-MM-DD')}) - ${countryText}`;
+      const dateText = selectedDate ? selectedDate.format('YYYY-MM-DD') : moment().format('YYYY-MM-DD');
+      return `${dateText} 数据 - ${countryText}`;
     } else if (selectedMonth) {
       const monthText = selectedMonth.format('YYYY年MM月');
       return `${monthText}数据 - ${countryText}`;
@@ -254,8 +266,17 @@ const OperationStats: React.FC = () => {
     setSelectedMonth(null);
   };
 
+  // 处理今日（按日）日期变更：切换为按日模式并设置选中日期
+  const handleDayChange = (value: Moment | null, dateString: string) => {
+    if (value) {
+      setSelectedDate(value);
+      setIsToday(true); // 打开按日模式
+      setSelectedMonth(null); // 清空月份
+    }
+  };
+
   // 修改月份选择的处理函数
-  const handleMonthChange = (value: any) => {
+  const handleMonthChange = (value: Moment | null) => {
     setSelectedMonth(value);
       setIsToday(false);
   };
@@ -1453,23 +1474,28 @@ const OperationStats: React.FC = () => {
           {/* 时间和国家选择器 */}
           <div style={{ marginBottom: '24px' }}>
             <Space size={16}>
-              <Button 
-                type={isToday ? 'primary' : 'default'}
-                onClick={handleTodayClick}
-                icon={<CalendarOutlined />}
-              >
-                今日数据
-              </Button>
+              {/* 将“今日数据”按钮替换为可选择日期的控件，默认显示今天的具体日期 */}
+              <DatePicker
+                value={selectedDate}
+                onChange={handleDayChange}
+                allowClear={false}
+                format="YYYY-MM-DD"
+                disabledDate={(current) => current && current > moment().endOf('day')}
+                style={{ width: 140 }}
+              />
               <DatePicker
                 picker="month"
                 value={selectedMonth}
                 onChange={handleMonthChange}
                 allowClear={false}
+                disabledDate={(current) => current && current > moment().endOf('month')}
                 style={{ width: 120 }}
               />
               <Select 
-                value={selectedCountry} 
-                onChange={(value) => setSelectedCountry(value)}
+                value={availableCountries.length > 0 ? selectedCountry : undefined}
+                placeholder="请选择国家"
+                disabled={availableCountries.length === 0}
+                onChange={(value: number) => setSelectedCountry(value)}
                 style={{ width: 120 }}
               >
                 {availableCountries.map(country => (
@@ -1513,4 +1539,4 @@ const OperationStats: React.FC = () => {
   );
 };
 
-export default OperationStats; 
+export default OperationStats;

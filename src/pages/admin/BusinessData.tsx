@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   Table,
@@ -23,7 +23,6 @@ import {
   UserOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
-  ClickOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -31,16 +30,22 @@ import {
   BusinessData, 
   MonthlyHistory, 
   BusinessDataStats,
-  MonthPeriodInfo 
+  MonthPeriodInfo,
+  DailyHistory,
+  DayPeriodInfo
 } from '../../types/businessData';
 import {
   getBusinessData,
   getBusinessDataStats,
   getMonthlyHistory,
-  getAvailableMonthPeriods
+  getAvailableMonthPeriods,
+  getDailyHistory,
+  getAvailableDayPeriods
 } from '../../services/businessData';
 import { getCountries, Country } from '../../services/countries';
 import { getUsers } from '../../services/users';
+import moment from 'moment';
+import type { Moment } from 'moment';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -56,6 +61,11 @@ const AdminBusinessData: React.FC = () => {
   // 历史数据状态
   const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<MonthPeriodInfo[]>([]);
+  // 新增：日报数据状态
+  const [dailyHistory, setDailyHistory] = useState<DailyHistory[]>([]);
+  const [availableDays, setAvailableDays] = useState<DayPeriodInfo[]>([]);
+  // 日报：选择的日期
+  const [dailySelectedDate, setDailySelectedDate] = useState<Moment | null>(null);
   
   // 筛选状态
   const [selectedAccount, setSelectedAccount] = useState<number | undefined>();
@@ -81,6 +91,8 @@ const AdminBusinessData: React.FC = () => {
     fetchAvailablePeriods();
     fetchCountries();
     fetchUsers(); // 获取用户数据
+    // 新增：加载可用日期
+    fetchAvailableDays();
   }, []);
 
   useEffect(() => {
@@ -92,7 +104,11 @@ const AdminBusinessData: React.FC = () => {
     if (activeTab === 'history') {
       fetchMonthlyHistory();
     }
-  }, [activeTab, selectedAccount]);
+    // 新增：当切换到日报标签时加载日报数据（需选择具体日期）
+    if (activeTab === 'daily' && dailySelectedDate) {
+      fetchDailyHistory();
+    }
+  }, [activeTab, selectedAccount, dailySelectedDate]);
 
 
 
@@ -152,16 +168,70 @@ const AdminBusinessData: React.FC = () => {
     }
   };
 
+  // 新增：获取每日历史数据
+  const fetchDailyHistory = async () => {
+    if (!dailySelectedDate) {
+      setDailyHistory([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await getDailyHistory({
+        tiktok_account_id: selectedAccount,
+        day_period: dailySelectedDate.format('YYYYMMDD')
+      });
+      setDailyHistory(data);
+    } catch (error) {
+      console.error('获取日报数据失败:', error);
+      message.error('获取日报数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   // 获取可用月份
   const fetchAvailablePeriods = async () => {
     try {
       const data = await getAvailableMonthPeriods();
-      setAvailablePeriods(data);
+      // 将 { monthPeriod, accountCount } 转为 MonthPeriodInfo 结构
+      const mapped = data.map((d: any) => ({
+        month_period: d.monthPeriod,
+        account_count: d.accountCount,
+      }));
+      setAvailablePeriods(mapped);
     } catch (error) {
       console.error('获取可用月份失败:', error);
     }
+  };
+
+  // 新增：获取可用日期
+  const fetchAvailableDays = async () => {
+    try {
+      const days = await getAvailableDayPeriods();
+      setAvailableDays(days);
+    } catch (error) {
+      console.error('获取可用日期失败:', error);
+    }
+  };
+
+  // 默认选中昨天（北京时区同本地时区处理）
+  useEffect(() => {
+    const yesterday = moment().subtract(1, 'day').startOf('day');
+    setDailySelectedDate(yesterday);
+  }, []);
+
+  // 禁用当天及未来日期
+  const disableDailyDate = (current: Moment) => {
+    if (!current) return false;
+    const today = moment().startOf('day');
+    return current.isSameOrAfter(today, 'day');
+  };
+
+  // 新增：处理日报日期选择
+  const handleDailyDateChange = (value: Moment | null) => {
+    setDailySelectedDate(value);
   };
 
   // 获取国家列表
@@ -211,7 +281,7 @@ const AdminBusinessData: React.FC = () => {
         item.account_status === searchFilters.accountStatus;
         
       const matchesGroupName = searchFilters.groupName === 'all' || 
-        (item.tiktok_account?.user?.group_name === searchFilters.groupName);
+        (item.tiktok_account?.group_name === searchFilters.groupName);
         
       const matchesMember = searchFilters.member === 'all' || 
         (item.tiktok_account?.user?.id && item.tiktok_account.user.id.toString() === searchFilters.member);
@@ -235,7 +305,7 @@ const AdminBusinessData: React.FC = () => {
         item.month_period.toString() === searchFilters.month;
         
       const matchesGroupName = searchFilters.groupName === 'all' || 
-        (item.tiktok_account?.user?.group_name === searchFilters.groupName);
+        (item.tiktok_account?.group_name === searchFilters.groupName);
         
       const matchesMember = searchFilters.member === 'all' || 
         (item.tiktok_account?.user?.id && item.tiktok_account.user.id.toString() === searchFilters.member);
@@ -245,11 +315,40 @@ const AdminBusinessData: React.FC = () => {
     });
   };
 
+  // 新增：筛选历史日报数据（支持 账号名称 / 国家 / 小组 / 组员 四条件组合）
+  const getFilteredDailyHistory = () => {
+    if (!dailyHistory || !Array.isArray(dailyHistory)) return [];
+
+    return dailyHistory.filter(item => {
+      const matchesAccountName = !searchFilters.accountName ||
+        (item.tiktok_name && item.tiktok_name.toLowerCase().includes(searchFilters.accountName.toLowerCase()));
+
+      const matchesCountry = searchFilters.country === 'all' || item.country === searchFilters.country;
+
+      const matchesGroupName = searchFilters.groupName === 'all' ||
+        (item.tiktok_account?.group_name === searchFilters.groupName);
+
+      const matchesMember = searchFilters.member === 'all' ||
+        (item.tiktok_account?.user?.id && item.tiktok_account.user.id.toString() === searchFilters.member);
+
+      return matchesAccountName && matchesCountry && matchesGroupName && matchesMember;
+    });
+  };
+
   // 格式化月份显示
   const formatMonthPeriod = (period: number) => {
     const year = Math.floor(period / 100);
     const month = period % 100;
     return `${year}年${month.toString().padStart(2, '0')}月`;
+  };
+
+  // 新增：格式化日期显示（yyyy-MM-dd）
+  const formatDayPeriod = (period: number) => {
+    const s = String(period).padStart(8, '0');
+    const y = s.slice(0, 4);
+    const m = s.slice(4, 6);
+    const d = s.slice(6, 8);
+    return `${y}-${m}-${d}`;
   };
 
   // 格式化金额
@@ -763,7 +862,74 @@ const AdminBusinessData: React.FC = () => {
     },
   ];
 
-
+  const dailyColumns: ColumnsType<DailyHistory> = [
+    {
+      title: 'TikTok账号',
+      dataIndex: 'tiktok_name',
+      key: 'tiktok_name',
+      width: 150,
+      render: (name, record) => {
+        const groupInfo = record.tiktok_account?.group_name && record.tiktok_account?.user?.username
+          ? `${record.tiktok_account.group_name} - ${record.tiktok_account.user.username}`
+          : '';
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{name || '-'}</Text>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {record.country || '-'}
+            </Text>
+            {groupInfo && (
+              <Text type="secondary" style={{ fontSize: '11px', color: '#999' }}>
+                {groupInfo}
+              </Text>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: '日期',
+      dataIndex: 'day_period',
+      key: 'day_period',
+      width: 110,
+      render: (period) => formatDayPeriod(period),
+    },
+    {
+      title: '日收入',
+      dataIndex: 'day_revenue',
+      key: 'day_revenue',
+      width: 120,
+      render: (value, record) => formatCurrency(value, record.country),
+    },
+    {
+      title: '日订单',
+      dataIndex: 'day_orders',
+      key: 'day_orders',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '日浏览',
+      dataIndex: 'day_views',
+      key: 'day_views',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '日点击',
+      dataIndex: 'day_clicks',
+      key: 'day_clicks',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'crawler_updated_at',
+      key: 'crawler_updated_at',
+      width: 150,
+      render: (time) => (time ? new Date(time).toLocaleString() : '-'),
+    },
+  ];
 
   return (
     <div>
@@ -928,10 +1094,43 @@ const AdminBusinessData: React.FC = () => {
             />
           </Tabs.TabPane>
           
-          <Tabs.TabPane tab="月度历史数据" key="history">
+          <Tabs.TabPane tab="历史月报数据" key="history">
             <Table
               columns={historyColumns}
               dataSource={getFilteredMonthlyHistory()}
+              rowKey="id"
+              loading={loading}
+              scroll={{ x: 1000 }}
+              pagination={{
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条记录`,
+                pageSize: 20,
+              }}
+            />
+          </Tabs.TabPane>
+
+          {/* 新增：历史日报数据 */}
+          <Tabs.TabPane tab="历史日报数据" key="daily">
+            <div style={{ marginBottom: 12 }}>
+              <Space size={12}>
+                <DatePicker
+                  value={dailySelectedDate}
+                  onChange={handleDailyDateChange}
+                  allowClear={false}
+                  format="YYYY-MM-DD"
+                  disabledDate={disableDailyDate}
+                  style={{ width: 160 }}
+                />
+                {!dailySelectedDate && (
+                  <Text type="secondary">请选择一个历史日期</Text>
+                )}
+                <Button type="primary" onClick={fetchDailyHistory} disabled={!dailySelectedDate} icon={<CalendarOutlined />}>查询指定日期</Button>
+              </Space>
+            </div>
+            <Table
+              columns={dailyColumns}
+              dataSource={getFilteredDailyHistory()}
               rowKey="id"
               loading={loading}
               scroll={{ x: 1000 }}
@@ -949,4 +1148,4 @@ const AdminBusinessData: React.FC = () => {
   );
 };
 
-export default AdminBusinessData; 
+export default AdminBusinessData;

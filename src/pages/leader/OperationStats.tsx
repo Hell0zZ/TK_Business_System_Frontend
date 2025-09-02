@@ -46,16 +46,14 @@ import {
   ReloadOutlined,
   DisconnectOutlined
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
-import 'dayjs/locale/zh-cn';
 import zhCN from 'antd/es/locale/zh_CN';
 import ReactECharts from 'echarts-for-react';
 import { getCountries, Country } from '../../services/countries';
 import { getLeaderOperationStats, OperationStatsParams, OperationStatsData } from '../../services/admin';
-
-// 设置dayjs为中文
-dayjs.locale('zh-cn');
+import moment from 'moment';
+import type { Moment } from 'moment';
+// 设置 moment 为中文
+moment.locale('zh-cn');
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -72,7 +70,8 @@ interface GroupData {
 const LeaderOperationStats: React.FC = () => {
   const [loading, setLoading] = useState(true); // 初始设置为true，避免闪烁
   const [isToday, setIsToday] = useState<boolean>(true); // 默认选择今日
-  const [selectedMonth, setSelectedMonth] = useState<any>(null); // 默认不选择月份
+  const [selectedMonth, setSelectedMonth] = useState<Moment | null>(null); // 月份选择（Moment）
+  const [selectedDate, setSelectedDate] = useState<Moment | null>(moment()); // 新增：按日日期选择，默认今天
   const [selectedCountry, setSelectedCountry] = useState<number>(1); // 默认美国ID为1
   const [availableCountries, setAvailableCountries] = useState<Country[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
@@ -156,6 +155,11 @@ const LeaderOperationStats: React.FC = () => {
         detail_level: 'member'
       };
 
+      // 新增：在“按日模式”下，携带具体日期参数（YYYY-MM-DD）
+      if (isToday && selectedDate) {
+        params.date = selectedDate.format('YYYY-MM-DD');
+      }
+
       // 如果选择了月份，添加date参数
       if (!isToday && selectedMonth) {
         params.date = selectedMonth.format('YYYYMM');
@@ -194,13 +198,14 @@ const LeaderOperationStats: React.FC = () => {
     if (availableCountries.length > 0) { // 确保国家列表已加载
       fetchOperationStats();
     }
-  }, [isToday, selectedMonth, selectedCountry]);
+  }, [isToday, selectedMonth, selectedCountry, selectedDate]);
 
   const getTimeTitle = () => {
     const countryText = availableCountries.find(c => c.id === selectedCountry)?.name || '未知国家';
     
     if (isToday) {
-      return `今日数据 (${dayjs().format('YYYY-MM-DD')}) - ${countryText}`;
+      const dateText = selectedDate ? selectedDate.format('YYYY-MM-DD') : moment().format('YYYY-MM-DD');
+      return `${dateText} 数据 - ${countryText}`;
     } else if (selectedMonth) {
       const monthText = selectedMonth.format('YYYY年MM月');
       return `${monthText}数据 - ${countryText}`;
@@ -209,16 +214,26 @@ const LeaderOperationStats: React.FC = () => {
     }
   };
 
-  // 处理今日按钮点击
+  // 新增：按日日期变更处理
+  const handleDayChange = (value: Moment | null) => {
+    if (value) {
+      setSelectedDate(value);
+      setIsToday(true); // 切换为按日模式
+      setSelectedMonth(null); // 清空月份
+    }
+  };
+
+  // 处理今日按钮点击（保留但不在UI使用）
   const handleTodayClick = () => {
     setIsToday(true);
     setSelectedMonth(null);
+    setSelectedDate(moment());
   };
 
   // 修改月份选择的处理函数
-  const handleMonthChange = (value: any) => {
+  const handleMonthChange = (value: Moment | null) => {
     setSelectedMonth(value);
-      setIsToday(false);
+    setIsToday(false);
   };
 
   // 获取货币符号
@@ -327,7 +342,7 @@ const LeaderOperationStats: React.FC = () => {
                     {currencySymbol}
                   </Text>
                   <Text style={{ color: '#fff', fontSize: '56px', fontWeight: '700', lineHeight: 1 }}>
-                    {(summary.total_revenue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {(summary?.total_revenue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Text>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>
@@ -352,7 +367,7 @@ const LeaderOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>账号总数</Text>}
-              value={summary.total_accounts || 0}
+              value={summary?.total_accounts || 0}
               prefix={<TeamOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -369,7 +384,7 @@ const LeaderOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>订单总数</Text>}
-              value={summary.total_orders || 0}
+              value={summary?.total_orders || 0}
               prefix={<ShoppingOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -386,7 +401,7 @@ const LeaderOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>橱窗失效</Text>}
-              value={summary.shop_expired_accounts || 0}
+              value={summary?.shop_expired_accounts || 0}
               prefix={<WarningOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -403,11 +418,11 @@ const LeaderOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>违规账号</Text>}
-              value={summary.violation_accounts || 0}
+              value={summary?.violation_accounts || 0}
               prefix={<ExclamationCircleOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
               suffix={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>
-                ({summary.total_accounts ? ((summary.violation_accounts / summary.total_accounts) * 100).toFixed(1) : 0}%)
+                ({summary?.total_accounts ? (((summary?.violation_accounts || 0) / (summary?.total_accounts || 1)) * 100).toFixed(1) : 0}%)
               </Text>}
             />
           </Card>
@@ -423,7 +438,7 @@ const LeaderOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>⚠️ 登录失效</Text>}
-              value={summary.login_expired_accounts || 0}
+              value={summary?.login_expired_accounts || 0}
               prefix={<DisconnectOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -1152,21 +1167,25 @@ const LeaderOperationStats: React.FC = () => {
         </Title>
 
         <Spin spinning={loading} size="large">
-          {/* 时间和国家选择器 */}
           <div style={{ marginBottom: '24px' }}>
             <Space size={16}>
-              <Button 
-                type={isToday ? 'primary' : 'default'}
-                onClick={handleTodayClick}
-                icon={<CalendarOutlined />}
-              >
-                今日数据
-              </Button>
+              {/* 新增：按日选择器，支持选择历史日期 */}
               <DatePicker
-                picker="month"
+                value={selectedDate}
+                onChange={handleDayChange}
+                allowClear={false}
+                format="YYYY-MM-DD"
+                disabledDate={(current) => !!current && current > moment().endOf('day')}
+                style={{ width: 140 }}
+              />
+              <DatePicker
                 value={selectedMonth}
                 onChange={handleMonthChange}
                 allowClear={false}
+                picker="month"
+                placeholder="请选择月份"
+                format="YYYY-MM"
+                disabledDate={(current) => !!current && current > moment().endOf('month')}
                 style={{ width: 120 }}
               />
               <Select 
@@ -1208,4 +1227,4 @@ const LeaderOperationStats: React.FC = () => {
   );
 };
 
-export default LeaderOperationStats; 
+export default LeaderOperationStats;

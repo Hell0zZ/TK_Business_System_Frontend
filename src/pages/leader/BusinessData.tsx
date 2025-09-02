@@ -23,7 +23,6 @@ import {
   UserOutlined,
   ExclamationCircleOutlined,
   EyeOutlined,
-  ClickOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -32,17 +31,24 @@ import {
   MonthlyHistory, 
   BusinessDataStats,
   MonthlyStats,
-  MonthPeriodInfo 
+  MonthlyHistoryStats,
+  MonthPeriodInfo, 
+  DailyHistory,
+  DayPeriodInfo
 } from '../../types/businessData';
 import {
   getBusinessData,
   getBusinessDataStats,
   getMonthlyHistory,
   getMonthlyHistoryStats,
-  getAvailableMonthPeriods
+  getAvailableMonthPeriods,
+  getDailyHistory,
+  getAvailableDayPeriods
 } from '../../services/businessData';
 import { getCountries, Country } from '../../services/countries';
 import { getUsers } from '../../services/users';
+import moment from 'moment';
+import type { Moment } from 'moment';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -57,8 +63,12 @@ const LeaderBusinessData: React.FC = () => {
   
   // 历史数据状态
   const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
-  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<MonthPeriodInfo[]>([]);
+  // 新增：日报数据状态
+  const [dailyHistory, setDailyHistory] = useState<DailyHistory[]>([]);
+  const [availableDays, setAvailableDays] = useState<DayPeriodInfo[]>([]);
+  const [dailySelectedDate, setDailySelectedDate] = useState<Moment | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyHistoryStats[]>([]);
   
   // 筛选状态
   const [selectedAccount, setSelectedAccount] = useState<number | undefined>();
@@ -94,7 +104,11 @@ const LeaderBusinessData: React.FC = () => {
     if (activeTab === 'history') {
       fetchMonthlyHistory();
     }
-  }, [activeTab, selectedAccount]);
+    // 新增：当切换到日报标签时加载日报数据（需选择具体日期）
+    if (activeTab === 'daily' && dailySelectedDate) {
+      fetchDailyHistory();
+    }
+  }, [activeTab, selectedAccount, dailySelectedDate]);
 
   useEffect(() => {
     if (activeTab === 'history' && selectedPeriods.length > 0) {
@@ -161,9 +175,7 @@ const LeaderBusinessData: React.FC = () => {
   // 获取月度统计数据
   const fetchMonthlyStats = async () => {
     try {
-      const data = await getMonthlyHistoryStats({
-        month_periods: selectedPeriods
-      });
+      const data = await getMonthlyHistoryStats(selectedPeriods);
       setMonthlyStats(data);
     } catch (error) {
       console.error('获取月度统计失败:', error);
@@ -175,10 +187,79 @@ const LeaderBusinessData: React.FC = () => {
   const fetchAvailablePeriods = async () => {
     try {
       const data = await getAvailableMonthPeriods();
-      setAvailablePeriods(data);
+      // 将 { monthPeriod, accountCount } 转为 MonthPeriodInfo 结构
+      const mapped = data.map((d: any) => ({
+        month_period: d.monthPeriod,
+        account_count: d.accountCount,
+      }));
+      setAvailablePeriods(mapped);
     } catch (error) {
       console.error('获取可用月份失败:', error);
     }
+  };
+
+  // 新增：获取每日历史数据
+  const fetchDailyHistory = async () => {
+    if (!dailySelectedDate) {
+      setDailyHistory([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await getDailyHistory({
+        tiktok_account_id: selectedAccount,
+        day_period: dailySelectedDate.format('YYYYMMDD')
+      });
+      setDailyHistory(data);
+    } catch (error) {
+      console.error('获取日报数据失败:', error);
+      message.error('获取日报数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 新增：获取可用日期
+  const fetchAvailableDays = async () => {
+    try {
+      const days = await getAvailableDayPeriods();
+      setAvailableDays(days);
+    } catch (error) {
+      console.error('获取可用日期失败:', error);
+    }
+  };
+
+  // 默认选中昨天（北京时区同本地时区处理）
+  useEffect(() => {
+    const yesterday = moment().subtract(1, 'day').startOf('day');
+    setDailySelectedDate(yesterday);
+    // 同时拉取可用日期
+    fetchAvailableDays();
+  }, []);
+
+  // 禁用当天及未来日期
+  const disableDailyDate = (current: Moment) => {
+    if (!current) return false;
+    const today = moment().startOf('day');
+    return current.isSameOrAfter(today, 'day');
+  };
+
+  // 处理日报日期选择
+  const handleDailyDateChange = (value: Moment | null) => {
+    setDailySelectedDate(value);
+  };
+
+  // 新增：日报筛选（与上方多条件一致）
+  const getFilteredDailyHistory = () => {
+    if (!dailyHistory || !Array.isArray(dailyHistory)) return [];
+    return dailyHistory.filter(item => {
+      const matchesAccountName = !searchFilters.accountName || 
+        (item.tiktok_name && item.tiktok_name.toLowerCase().includes(searchFilters.accountName.toLowerCase()));
+      const matchesCountry = searchFilters.country === 'all' || item.country === searchFilters.country;
+      const matchesMember = searchFilters.member === 'all' || 
+        (item.tiktok_account?.user?.id && item.tiktok_account.user.id.toString() === searchFilters.member);
+      return matchesAccountName && matchesCountry && matchesMember;
+    });
   };
 
   // 获取国家列表
@@ -748,6 +829,81 @@ const LeaderBusinessData: React.FC = () => {
     },
   ];
 
+  // 新增：历史日报数据表格列
+  const dailyColumns: ColumnsType<DailyHistory> = [
+    {
+      title: 'TikTok账号',
+      dataIndex: 'tiktok_name',
+      key: 'tiktok_name',
+      width: 150,
+      render: (name, record) => {
+        const memberInfo = record.tiktok_account?.user?.username 
+          ? record.tiktok_account.user.username
+          : '';
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{name || '-'}</Text>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              {record.country || '-'}
+            </Text>
+            {memberInfo && (
+              <Text type="secondary" style={{ fontSize: '11px', color: '#999' }}>
+                {memberInfo}
+              </Text>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: '日期',
+      dataIndex: 'day_period',
+      key: 'day_period',
+      width: 110,
+      render: (period) => {
+        const year = Math.floor(period / 10000);
+        const month = Math.floor((period % 10000) / 100);
+        const day = period % 100;
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      },
+    },
+    {
+      title: '日收入',
+      dataIndex: 'day_revenue',
+      key: 'day_revenue',
+      width: 120,
+      render: (value, record) => formatCurrency(value, record.country),
+    },
+    {
+      title: '日订单',
+      dataIndex: 'day_orders',
+      key: 'day_orders',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '日浏览',
+      dataIndex: 'day_views',
+      key: 'day_views',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '日点击',
+      dataIndex: 'day_clicks',
+      key: 'day_clicks',
+      width: 100,
+      render: (value) => value || 0,
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'crawler_updated_at',
+      key: 'crawler_updated_at',
+      width: 150,
+      render: (time) => (time ? new Date(time).toLocaleString() : '-'),
+    },
+  ];
+
   return (
     <div style={{ padding: '24px' }}>
       <Card>
@@ -905,10 +1061,43 @@ const LeaderBusinessData: React.FC = () => {
               }}
             />
           </Tabs.TabPane>
+
+          {/* 新增：历史日报数据 */}
+          <Tabs.TabPane tab="历史日报数据" key="daily">
+            <div style={{ marginBottom: 12 }}>
+              <Space size={12}>
+                <DatePicker
+                  value={dailySelectedDate}
+                  onChange={handleDailyDateChange}
+                  allowClear={false}
+                  format="YYYY-MM-DD"
+                  disabledDate={disableDailyDate}
+                  style={{ width: 160 }}
+                />
+                {!dailySelectedDate && (
+                  <Text type="secondary">请选择一个历史日期</Text>
+                )}
+                <Button type="primary" onClick={fetchDailyHistory} disabled={!dailySelectedDate} icon={<CalendarOutlined />}>查询指定日期</Button>
+              </Space>
+            </div>
+            <Table
+              columns={dailyColumns}
+              dataSource={getFilteredDailyHistory()}
+              rowKey="id"
+              loading={loading}
+              scroll={{ x: 1000 }}
+              pagination={{
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条记录`,
+                pageSize: 20,
+              }}
+            />
+          </Tabs.TabPane>
         </Tabs>
       </Card>
     </div>
   );
 };
 
-export default LeaderBusinessData; 
+export default LeaderBusinessData;

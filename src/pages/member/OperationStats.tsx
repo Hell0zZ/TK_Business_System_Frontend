@@ -47,24 +47,23 @@ import {
   DisconnectOutlined,
   UserOutlined
 } from '@ant-design/icons';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
-import 'dayjs/locale/zh-cn';
+import moment, { Moment } from 'moment';
+import 'moment/locale/zh-cn';
 import zhCN from 'antd/es/locale/zh_CN';
 import ReactECharts from 'echarts-for-react';
 import { getCountries, Country } from '../../services/countries';
 import { getMemberOperationStats, OperationStatsParams, OperationStatsData } from '../../services/admin';
 
-// 设置dayjs为中文
-dayjs.locale('zh-cn');
+// 设置moment为中文
+moment.locale('zh-cn');
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const MemberOperationStats: React.FC = () => {
   const [loading, setLoading] = useState(true); // 初始设置为true，避免闪烁
-  const [isToday, setIsToday] = useState<boolean>(true); // 默认选择今日
-  const [selectedMonth, setSelectedMonth] = useState<any>(null); // 默认不选择月份
+  const [selectedMonth, setSelectedMonth] = useState<Moment | null>(null); // 默认不选择月份
+  const [selectedDate, setSelectedDate] = useState<Moment | null>(moment()); // 新增：按日日期选择，默认今天
   const [selectedCountry, setSelectedCountry] = useState<number>(1); // 默认美国ID为1
   const [availableCountries, setAvailableCountries] = useState<Country[]>([]);
   const [operationData, setOperationData] = useState<OperationStatsData | null>(null);
@@ -112,13 +111,18 @@ const MemberOperationStats: React.FC = () => {
       
       // 构建请求参数
       const params: OperationStatsParams = {
-        time_type: isToday ? 'day' : 'month',
+        time_type: selectedDate ? 'day' : 'month',
         country_id: selectedCountry,
         detail_level: 'member'
       };
 
+      // 在"按日模式"下，携带具体日期参数（YYYY-MM-DD）
+      if (selectedDate) {
+        params.date = selectedDate.format('YYYY-MM-DD');
+      }
+
       // 如果选择了月份，添加date参数
-      if (!isToday && selectedMonth) {
+      if (selectedMonth) {
         params.date = selectedMonth.format('YYYYMM');
       }
 
@@ -155,27 +159,35 @@ const MemberOperationStats: React.FC = () => {
     if (availableCountries.length > 0) { // 确保国家列表已加载
       fetchOperationStats();
     }
-  }, [isToday, selectedMonth, selectedCountry]);
+  }, [selectedMonth, selectedDate, selectedCountry]);
 
   const getTimeTitle = () => {
     const countryText = availableCountries.find(c => c.id === selectedCountry)?.name || '未知国家';
     
-    if (isToday) {
-      return `今日运营数据 - ${countryText}`;
+    if (selectedDate) {
+      const dateText = selectedDate.format('YYYY-MM-DD');
+      return `${dateText} 数据 - ${countryText}`;
+    } else if (selectedMonth) {
+      const monthText = selectedMonth.format('YYYY年MM月');
+      return `${monthText}数据 - ${countryText}`;
     } else {
-      const monthText = selectedMonth ? selectedMonth.format('YYYY年M月') : '当月';
-      return `${monthText}运营数据 - ${countryText}`;
+      return `运营数据 - ${countryText}`;
     }
   };
 
-  const handleTodayClick = () => {
-    setIsToday(true);
-    setSelectedMonth(null);
+  // 处理按日日期变更
+  const handleDayChange = (value: Moment | null) => {
+    if (value) {
+      setSelectedDate(value);
+      setSelectedMonth(null); // 清空月份
+    }
   };
 
-  const handleMonthChange = (value: any) => {
-    setSelectedMonth(value);
-    setIsToday(false);
+  const handleMonthChange = (value: Moment | null) => {
+    if (value) {
+      setSelectedMonth(value);
+      setSelectedDate(null); // 清空日期
+    }
   };
 
   const getCurrencySymbol = (countryId: number) => {
@@ -256,7 +268,7 @@ const MemberOperationStats: React.FC = () => {
                     {currencySymbol}
                   </Text>
                   <Text style={{ color: '#fff', fontSize: '56px', fontWeight: '700', lineHeight: 1 }}>
-                    {(summary.total_revenue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {(summary?.total_revenue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Text>
                 </div>
                 <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>
@@ -281,7 +293,7 @@ const MemberOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>账号总数</Text>}
-              value={summary.total_accounts || 0}
+              value={summary?.total_accounts || 0}
               prefix={<TeamOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -298,7 +310,7 @@ const MemberOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>订单总数</Text>}
-              value={summary.total_orders || 0}
+              value={summary?.total_orders || 0}
               prefix={<ShoppingOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -315,7 +327,7 @@ const MemberOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>橱窗失效</Text>}
-              value={summary.shop_expired_accounts || 0}
+              value={summary?.shop_expired_accounts || 0}
               prefix={<WarningOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -332,11 +344,11 @@ const MemberOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>违规账号</Text>}
-              value={summary.violation_accounts || 0}
+              value={summary?.violation_accounts || 0}
               prefix={<ExclamationCircleOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
               suffix={<Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px' }}>
-                ({summary.total_accounts ? ((summary.violation_accounts / summary.total_accounts) * 100).toFixed(1) : 0}%)
+                ({(((summary?.violation_accounts || 0) / (summary?.total_accounts || 1)) * 100).toFixed(1)}%)
               </Text>}
             />
           </Card>
@@ -352,7 +364,7 @@ const MemberOperationStats: React.FC = () => {
           }}>
             <Statistic
               title={<Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>⚠️ 登录失效</Text>}
-              value={summary.login_expired_accounts || 0}
+              value={summary?.login_expired_accounts || 0}
               prefix={<DisconnectOutlined style={{ color: '#fff' }} />}
               valueStyle={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}
             />
@@ -431,7 +443,7 @@ const MemberOperationStats: React.FC = () => {
         value: memberData.username,
         status: '正常',
         icon: <UserOutlined style={{ color: '#1890ff' }} />,
-        badgeStatus: 'success' as const
+        badgeStatus: 'success'
       },
       {
         key: 'accounts',
@@ -439,17 +451,17 @@ const MemberOperationStats: React.FC = () => {
         value: memberData.accounts || 0,
         status: memberData.accounts > 0 ? '有账号' : '无账号',
         icon: <TeamOutlined style={{ color: '#52c41a' }} />,
-        badgeStatus: (memberData.accounts > 0 ? 'success' : 'warning') as const,
+        badgeStatus: (memberData.accounts > 0 ? 'success' : 'warning'),
         suffix: ' 个'
       },
       {
         key: 'revenue',
-        label: isToday ? '今日收入' : '月度收入',
+        label: selectedDate ? '日收入' : '月度收入',
         value: (memberData.revenue || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         status: memberData.revenue > 0 ? '有收入' : '无收入',
         icon: <DollarOutlined style={{ color: '#fa8c16' }} />,
         prefix: currencySymbol,
-        badgeStatus: (memberData.revenue > 0 ? 'success' : 'default') as const,
+        badgeStatus: (memberData.revenue > 0 ? 'success' : 'default'),
         color: '#fa8c16'
       },
       {
@@ -458,7 +470,7 @@ const MemberOperationStats: React.FC = () => {
         value: memberData.orders || 0,
         status: memberData.orders > 0 ? '有订单' : '无订单',
         icon: <ShoppingOutlined style={{ color: '#722ed1' }} />,
-        badgeStatus: (memberData.orders > 0 ? 'success' : 'default') as const,
+        badgeStatus: (memberData.orders > 0 ? 'success' : 'default'),
         suffix: ' 个',
         color: '#722ed1'
       },
@@ -468,7 +480,7 @@ const MemberOperationStats: React.FC = () => {
         value: memberData.violations || 0,
         status: memberData.violations > 0 ? '有违规' : '无违规',
         icon: <ExclamationCircleOutlined style={{ color: memberData.violations > 0 ? '#ff4d4f' : '#52c41a' }} />,
-        badgeStatus: (memberData.violations > 0 ? 'error' : 'success') as const,
+        badgeStatus: (memberData.violations > 0 ? 'error' : 'success'),
         suffix: ' 个',
         color: memberData.violations > 0 ? '#ff4d4f' : '#52c41a'
       },
@@ -478,7 +490,7 @@ const MemberOperationStats: React.FC = () => {
         value: (memberData.normal_rate || 0).toFixed(1),
         status: memberData.normal_rate >= 90 ? '优秀' : memberData.normal_rate >= 70 ? '良好' : '需改进',
         icon: <CheckCircleOutlined style={{ color: memberData.normal_rate >= 90 ? '#52c41a' : memberData.normal_rate >= 70 ? '#faad14' : '#ff4d4f' }} />,
-        badgeStatus: (memberData.normal_rate >= 90 ? 'success' : memberData.normal_rate >= 70 ? 'warning' : 'error') as const,
+        badgeStatus: (memberData.normal_rate >= 90 ? 'success' : memberData.normal_rate >= 70 ? 'warning' : 'error'),
         suffix: '%',
         color: memberData.normal_rate >= 90 ? '#52c41a' : memberData.normal_rate >= 70 ? '#faad14' : '#ff4d4f'
       }
@@ -551,9 +563,9 @@ const MemberOperationStats: React.FC = () => {
 
     // 转换违规数据为图表格式
     const violationStats = Object.entries(violationData).map(([key, value]) => ({
-      name: value.name,
-      count: value.count,
-      percentage: value.percentage
+      name: (value as any).name,
+      count: (value as any).count,
+      percentage: (value as any).percentage
     })).filter(item => item.count > 0);
 
     const colors = ['#1890ff', '#ff4d4f', '#eb2f96', '#fa8c16', '#722ed1'];
@@ -716,18 +728,23 @@ const MemberOperationStats: React.FC = () => {
           {/* 时间和国家选择器 */}
           <div style={{ marginBottom: '24px' }}>
             <Space size={16}>
-              <Button 
-                type={isToday ? 'primary' : 'default'}
-                onClick={handleTodayClick}
-                icon={<CalendarOutlined />}
-              >
-                今日数据
-              </Button>
+              {/* 按日选择器，支持选择历史日期 */}
               <DatePicker
-                picker="month"
+                value={selectedDate}
+                onChange={handleDayChange}
+                allowClear={false}
+                format="YYYY-MM-DD"
+                disabledDate={(current) => !!current && current > moment().endOf('day')}
+                style={{ width: 140 }}
+              />
+              <DatePicker
                 value={selectedMonth}
                 onChange={handleMonthChange}
                 allowClear={false}
+                picker="month"
+                placeholder="请选择月份"
+                format="YYYY-MM"
+                disabledDate={(current) => !!current && current > moment().endOf('month')}
                 style={{ width: 120 }}
               />
               <Select 
@@ -762,4 +779,4 @@ const MemberOperationStats: React.FC = () => {
   );
 };
 
-export default MemberOperationStats; 
+export default MemberOperationStats;

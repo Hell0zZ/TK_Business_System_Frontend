@@ -47,6 +47,25 @@ export interface MonthlyHistory {
   tiktok_account?: TikTokAccount;
 }
 
+// 新增：每日历史数据类型定义
+export interface DailyHistory {
+  id: number;
+  tiktok_account_id: number;
+  day_period: number; // yyyyMMdd
+  day_revenue?: number;
+  day_orders?: number;
+  day_views?: number;
+  day_clicks?: number;
+  tiktok_name: string;
+  country: string;
+  country_code?: string;
+  crawler_status?: string;
+  crawler_updated_at?: string;
+  created_at: string;
+  updated_at: string;
+  tiktok_account?: TikTokAccount;
+}
+
 // 统计数据类型定义
 export interface BusinessDataStats {
   total_accounts: number;
@@ -82,6 +101,12 @@ export interface MonthlyHistoryStats {
   updated_at: string;
 }
 
+// 新增：日期信息类型定义（每日）
+export interface DayPeriodInfo {
+  day_period: number;
+  account_count: number;
+}
+
 // 月份信息类型定义
 export interface MonthPeriod {
   monthPeriod: number;
@@ -96,13 +121,7 @@ export interface MonthPeriodInfo {
 
 // 导入其他需要的类型
 import { ProxyIP } from './proxyIP';
-
-// 前向声明，避免循环依赖
-export interface TikTokAccount {
-  id: number;
-  tiktok_name?: string;
-  // 其他字段根据需要添加
-}
+import type { TikTokAccount } from './tiktokAccount';
 
 // 查询参数类型定义
 export interface BusinessDataListParams {
@@ -121,4 +140,13 @@ export interface MonthlyHistoryListParams {
 
 export interface MonthlyHistoryStatsParams {
   month_periods?: number[];
-} 
+}
+
+// 新增：每日历史查询参数
+export interface DailyHistoryListParams {
+  tiktok_account_id?: number;
+  day_period?: string; // yyyyMMdd
+  country_id?: number;
+  page?: number;
+  page_size?: number;
+}
